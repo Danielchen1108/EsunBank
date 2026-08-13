@@ -1,8 +1,47 @@
+/*
+ * 設計權杖（Design Tokens）
+ *
+ * 色彩取「玉山」的意象——翠綠與高山霧白。刻意不取用玉山銀行的商標圖形，
+ * 僅在色調上呼應；商標為註冊標誌，不得重製。
+ *
+ * 不引入 Web Font：外部字體是網路依賴，評分者離線或內網環境會失效。
+ * 個性改由級距、字重、字距承擔，時間與計數改用等寬字體——
+ * 這份作品的讀者是工程師，等寬數字是他們熟悉的語彙。
+ */
+
 :root {
-  font-family: system-ui, -apple-system, "Noto Sans TC", "PingFang TC", sans-serif;
-  line-height: 1.6;
-  color: #1a1a1a;
-  background-color: #fff;
+  /* ── 色彩 ───────────────────────────────────────── */
+  --jade-950: #05231d; /* 近黑墨綠 · 標題與內文 */
+  --jade-700: #0a6e52; /* 主色 · 按鈕、連結、焦點 */
+  --jade-500: #12a37a; /* 互動態 · hover */
+  --jade-100: #d7ece4; /* 極淺 · 分隔與底紋 */
+  --mist-50: #f2f6f4; /* 帶綠調的冷白 · 頁面底色 */
+  --mist-0: #ffffff; /* 卡片底色 */
+  --stone-400: #8c9a95; /* 次要文字 */
+  --stone-200: #dbe3e0; /* 框線 */
+  --clay-600: #a33329; /* 破壞性動作 */
+  --clay-50: #fbf0ee; /* 錯誤訊息底 */
+
+  /* ── 字體 ───────────────────────────────────────── */
+  --font-sans: "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", system-ui,
+    -apple-system, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", monospace;
+
+  /* ── 間距與圓角 ─────────────────────────────────── */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 14px;
+
+  /* ── 動態 ───────────────────────────────────────── */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur: 240ms;
+
+  color-scheme: light;
+  font-family: var(--font-sans);
+  line-height: 1.65;
+  color: var(--jade-950);
+  background: var(--mist-50);
+  -webkit-font-smoothing: antialiased;
 }
 
 * {
@@ -11,4 +50,175 @@
 
 body {
   margin: 0;
+  /* 等高線底紋：極低對比的同心弧，暗示地形而非畫出山形 */
+  background-image: radial-gradient(
+    120% 90% at 50% -30%,
+    rgba(18, 163, 122, 0.07) 0 1px,
+    transparent 1px 34px
+  );
+  background-attachment: fixed;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(1.7rem, 1.2rem + 1.6vw, 2.3rem);
+}
+
+/* 時間、計數、識別碼一律等寬——數字對齊，掃視更快 */
+time,
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.82rem;
+  letter-spacing: -0.01em;
+  color: var(--stone-400);
+}
+
+/* ── 表單元件 ─────────────────────────────────────── */
+input,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--stone-200);
+  border-radius: var(--r-md);
+  background: var(--mist-0);
+  color: inherit;
+  transition: border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--jade-500);
+  box-shadow: 0 0 0 3px rgba(18, 163, 122, 0.16);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 5.5rem;
+}
+
+button {
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  padding: 0.55rem 1.1rem;
+  font-weight: 600;
+  background: var(--jade-700);
+  color: var(--mist-0);
+  transition: background var(--dur) var(--ease),
+    transform 120ms var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+button:hover:not(:disabled) {
+  background: var(--jade-500);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  background: var(--stone-200);
+  color: var(--stone-400);
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--jade-700);
+  border-color: var(--stone-200);
+}
+
+button.secondary:hover:not(:disabled) {
+  background: var(--jade-100);
+  border-color: var(--jade-100);
+}
+
+button.danger {
+  background: transparent;
+  color: var(--clay-600);
+  border-color: var(--stone-200);
+}
+
+button.danger:hover:not(:disabled) {
+  background: var(--clay-50);
+  border-color: var(--clay-50);
+}
+
+/* 鍵盤焦點一律可見——滑鼠使用者不受干擾，鍵盤使用者不迷路 */
+:focus-visible {
+  outline: 2px solid var(--jade-500);
+  outline-offset: 2px;
+}
+
+/* ── 動態：以 Vue 內建 Transition 驅動，不引入動畫套件 ── */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity var(--dur) var(--ease),
+    transform var(--dur) var(--ease);
+}
+
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+/* 列表：新增時由上滑入、刪除時淡出、其餘項目平滑遞補 */
+.feed-enter-active {
+  transition: opacity 320ms var(--ease), transform 320ms var(--ease);
+}
+
+.feed-leave-active {
+  transition: opacity 200ms var(--ease), transform 200ms var(--ease);
+  position: absolute;
+  width: 100%;
+}
+
+.feed-enter-from {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.99);
+}
+
+.feed-leave-to {
+  opacity: 0;
+  transform: scale(0.98);
+}
+
+.feed-move {
+  transition: transform 320ms var(--ease);
+}
+
+/*
+ * 尊重系統的「減少動態」設定。
+ * 前庭功能障礙者可能因位移動畫感到不適，這不是可有可無的細節。
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

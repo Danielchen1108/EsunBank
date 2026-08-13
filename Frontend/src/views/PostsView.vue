@@ -223,6 +223,9 @@ function formatTime(createdAt) {
       照後端回傳順序顯示，前端不排序（題目未定義排序規則）。
       內容一律用 {{ }} 插值輸出，插值會跳脫 HTML——這是本案的 XSS 防線，不得改用 v-html。
     -->
+    <!-- TransitionGroup 為 Vue 內建：新增時滑入、刪除時淡出、其餘項目平滑遞補。
+         未引入動畫套件——見 App.vue 的說明。 -->
+    <TransitionGroup name="feed" tag="div" class="feed">
     <article v-for="post in posts" :key="post.postId" class="post">
       <header>
         <span class="author">{{ post.userName }}</span>
@@ -276,103 +279,103 @@ function formatTime(createdAt) {
         留言已送出。（題目未要求列出留言，故此處不顯示留言內容）
       </small>
     </article>
+    </TransitionGroup>
   </section>
 </template>
 
 <style scoped>
+/*
+ * 版面：單欄、窄行長。社群內容是逐則掃視的，過寬的行長會讓眼睛在換行時失去位置。
+ * 動態一律由 CSS 與 Vue 內建 Transition 驅動；style.css 已統一處理 prefers-reduced-motion。
+ */
 .page {
-  max-width: 40rem;
-  margin: 3rem auto;
-  padding: 0 1.5rem;
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 5rem;
 }
 
+h1 {
+  margin-bottom: 1.5rem;
+}
+
+/* ── 發文輸入區 ─────────────────────────────────── */
 .composer {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
+  gap: 0.6rem;
+  padding: 1.25rem;
+  background: var(--mist-0);
+  border: 1px solid var(--stone-200);
+  border-radius: var(--r-lg);
+  /* 輸入區是這一頁的動作起點，用一道細的主色邊界把它與下方的內容區分開 */
+  border-top: 3px solid var(--jade-700);
 }
 
-label {
+.composer label {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.9rem;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
-textarea,
-input {
-  padding: 0.5rem 0.6rem;
-  border: 1px solid #ccc;
-  border-radius: 0.3rem;
-  font: inherit;
-  font-size: 1rem;
+/* 字數計數靠右對齊輸入框尾端，並用等寬數字避免跳動 */
+.composer label > .hint {
+  align-self: flex-end;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
 }
 
-textarea {
-  resize: vertical;
-}
-
-button {
-  padding: 0.5rem 0.9rem;
-  border: 0;
-  border-radius: 0.3rem;
-  background: #0a7d3f;
-  color: #fff;
-  font: inherit;
-  font-size: 0.95rem;
-  cursor: pointer;
-}
-
-button:disabled {
-  background: #999;
-  cursor: default;
-}
-
-button.secondary {
-  background: #eee;
-  color: #333;
-}
-
-button.danger {
-  background: #b3261e;
+/* ── 發文列表 ───────────────────────────────────── */
+.feed {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
 
 .post {
-  padding: 1rem 1.25rem;
-  margin-bottom: 1rem;
-  border: 1px solid #ddd;
-  border-radius: 0.5rem;
+  padding: 1.25rem;
+  background: var(--mist-0);
+  border: 1px solid var(--stone-200);
+  border-radius: var(--r-lg);
+  transition: border-color var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
 }
 
-.post header {
+.post:hover {
+  border-color: var(--jade-100);
+  box-shadow: 0 1px 3px rgba(5, 35, 29, 0.05);
+}
+
+.post > header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
+  margin-bottom: 0.6rem;
 }
 
 .author {
   font-weight: 600;
+  letter-spacing: -0.01em;
 }
 
 .time {
-  color: #888;
-  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  color: var(--stone-400);
+  white-space: nowrap;
 }
 
+/* 使用者輸入的內容：保留換行與空白，但不解讀 HTML（{{ }} 插值已跳脫） */
 .content {
-  margin: 0.6rem 0 1rem;
-  /* 使用者輸入的換行照原樣呈現；插值仍會跳脫 HTML */
+  margin: 0 0 0.9rem;
   white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.editor {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin: 0.6rem 0 1rem;
+  overflow-wrap: anywhere;
 }
 
 .actions {
@@ -380,33 +383,97 @@ button.danger {
   gap: 0.5rem;
 }
 
+.actions button {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.85rem;
+}
+
+/* ── 編輯狀態 ───────────────────────────────────── */
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ── 留言 ───────────────────────────────────────── */
 .comment {
   display: flex;
+  align-items: stretch;
   gap: 0.5rem;
   margin-top: 1rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid #eee;
+  padding-top: 1rem;
+  border-top: 1px solid var(--stone-200);
 }
 
 .comment input {
   flex: 1;
+  min-width: 0;
 }
 
-.error {
-  color: #b3261e;
+.comment button {
+  flex-shrink: 0;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.85rem;
+}
+
+/* 留言送出後的回饋緊接在表單下方 */
+.comment + .error,
+.comment + .success {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* ── 狀態訊息 ───────────────────────────────────── */
+.banner {
+  margin: 1.25rem 0 0;
+  padding: 0.85rem 1rem;
+  border-radius: var(--r-md);
+  font-size: 0.9rem;
 }
 
 .hint {
-  color: #888;
+  color: var(--stone-400);
+  background: var(--mist-0);
+  border: 1px dashed var(--stone-200);
+}
+
+.error {
+  color: var(--clay-600);
+  background: var(--clay-50);
 }
 
 .success {
-  color: #0a7d3f;
+  color: var(--jade-700);
+  background: var(--jade-100);
 }
 
-.banner {
-  padding: 0.75rem 1rem;
-  border-radius: 0.3rem;
-  background: #f4f4f4;
+.field-error,
+.form-error {
+  font-size: 0.82rem;
+  color: var(--clay-600);
+}
+
+.form-success {
+  font-size: 0.82rem;
+  color: var(--jade-700);
+}
+
+.counter {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+  color: var(--stone-400);
+}
+
+@media (max-width: 34rem) {
+  .page {
+    padding: 1.75rem 1rem 4rem;
+  }
+
+  .comment-form {
+    flex-direction: column;
+  }
 }
 </style>

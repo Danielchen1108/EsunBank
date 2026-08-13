@@ -97,75 +97,97 @@ async function onSubmit() {
 </template>
 
 <style scoped>
+/*
+ * 表單頁（註冊／登入）共用版型：窄欄、置中偏上。
+ * 不置中於垂直中線——表單長度不一，靠上對齊時各頁的視覺起點一致。
+ */
+/*
+ * 與其他頁面共用 46rem 的內容欄，表單本身再收窄至 26rem 並靠左。
+ * 表單置中於自己的窄欄看似合理，但左緣會與頁首的品牌區錯開——
+ * 同一條垂直基準線貫穿所有頁面，比每頁各自置中更安定。
+ */
 section {
+  max-width: 46rem;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 5rem;
+}
+
+form,
+h1,
+.lede,
+.banner {
   max-width: 26rem;
-  margin: 3rem auto;
-  padding: 0 1.5rem;
+}
+
+h1 {
+  margin-bottom: 0.35rem;
+}
+
+.lede {
+  margin: 0 0 2rem;
+  font-size: 0.9rem;
+  color: var(--stone-400);
 }
 
 form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.1rem;
+  padding: 1.5rem;
+  background: var(--mist-0);
+  border: 1px solid var(--stone-200);
+  border-top: 3px solid var(--jade-700);
+  border-radius: var(--r-lg);
 }
 
 label {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  font-size: 0.9rem;
-}
-
-input,
-textarea {
-  padding: 0.5rem 0.6rem;
-  border: 1px solid #ccc;
-  border-radius: 0.3rem;
-  font: inherit;
-  font-size: 1rem;
-}
-
-textarea {
-  resize: vertical;
-}
-
-button {
-  padding: 0.6rem;
-  border: 0;
-  border-radius: 0.3rem;
-  background: #0a7d3f;
-  color: #fff;
-  font: inherit;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-button:disabled {
-  background: #999;
-  cursor: default;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .optional {
-  color: #888;
   font-weight: 400;
+  color: var(--stone-400);
+}
+
+small {
+  font-weight: 400;
+  font-size: 0.8rem;
 }
 
 .error {
-  color: #b3261e;
+  color: var(--clay-600);
 }
 
 .hint {
-  color: #888;
+  color: var(--stone-400);
 }
 
 .success {
-  color: #0a7d3f;
+  color: var(--jade-700);
 }
 
 .banner {
   margin-top: 1.25rem;
-  padding: 0.75rem 1rem;
-  border-radius: 0.3rem;
-  background: #f4f4f4;
+  padding: 0.85rem 1rem;
+  border-radius: var(--r-md);
+  font-size: 0.9rem;
+}
+
+.banner.error {
+  background: var(--clay-50);
+}
+
+.banner.success {
+  background: var(--jade-100);
+}
+
+@media (max-width: 34rem) {
+  section {
+    padding: 2rem 1rem 4rem;
+  }
 }
 </style>
