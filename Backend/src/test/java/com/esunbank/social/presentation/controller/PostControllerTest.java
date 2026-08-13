@@ -82,8 +82,7 @@ class PostControllerTest {
     }
 
     private Post samplePost(long postId, long userId, String content) {
-        return new Post(postId, userId, "陳大文", content, null,
-                LocalDateTime.of(2026, 8, 13, 10, 0));
+        return new Post(postId, userId, "陳大文", content, LocalDateTime.of(2026, 8, 13, 10, 0));
     }
 
     @Test
@@ -143,7 +142,10 @@ class PostControllerTest {
                 .andExpect(jsonPath("$[0].postId").value(1))
                 .andExpect(jsonPath("$[0].userName").value("陳大文"))
                 .andExpect(jsonPath("$[0].content").value("第一篇"))
-                .andExpect(jsonPath("$[0].createdAt").exists());
+                .andExpect(jsonPath("$[0].createdAt").exists())
+                // 回應不含 image：欄位保留於 schema（題目第 2 頁），但無上傳功能故 API 不開放
+                // （SCOPE-BOUNDARY.md R-3）。回一個永遠為 null 的欄位只會誤導前端。
+                .andExpect(jsonPath("$[0].image").doesNotExist());
     }
 
     @Test

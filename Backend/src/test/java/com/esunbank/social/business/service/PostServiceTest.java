@@ -46,19 +46,18 @@ class PostServiceTest {
     private PostService postService;
 
     private Post post(long postId, String content) {
-        return new Post(postId, 1L, "陳大文", content, null,
-                LocalDateTime.of(2026, 8, 13, 10, 0));
+        return new Post(postId, 1L, "陳大文", content, LocalDateTime.of(2026, 8, 13, 10, 0));
     }
 
     @Test
     @DisplayName("新增發文：以目前登入者的 userId 寫入")
     void createsPostWithCurrentUserId() {
-        when(postRepository.create(eq(2L), eq("今天天氣真好"), eq(null))).thenReturn(9L);
+        when(postRepository.create(eq(2L), eq("今天天氣真好"))).thenReturn(9L);
 
-        Long postId = postService.create(new PostCreateCommand(2L, "今天天氣真好", null));
+        Long postId = postService.create(new PostCreateCommand(2L, "今天天氣真好"));
 
         assertThat(postId).isEqualTo(9L);
-        verify(postRepository).create(2L, "今天天氣真好", null);
+        verify(postRepository).create(2L, "今天天氣真好");
     }
 
     @Test
@@ -75,11 +74,11 @@ class PostServiceTest {
     @DisplayName("編輯發文：先確認目標存在，再呼叫更新")
     void updatesExistingPost() {
         when(postRepository.findById(1L)).thenReturn(Optional.of(post(1L, "原始內容")));
-        when(postRepository.update(1L, "修改後內容", null)).thenReturn(1);
+        when(postRepository.update(1L, "修改後內容")).thenReturn(1);
 
-        Post updated = postService.update(new PostUpdateCommand(1L, "修改後內容", null));
+        Post updated = postService.update(new PostUpdateCommand(1L, "修改後內容"));
 
-        verify(postRepository).update(1L, "修改後內容", null);
+        verify(postRepository).update(1L, "修改後內容");
         assertThat(updated.content()).isEqualTo("修改後內容");
         assertThat(updated.postId()).isEqualTo(1L);
     }
@@ -89,10 +88,10 @@ class PostServiceTest {
     void rejectsUpdateOfMissingPost() {
         when(postRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> postService.update(new PostUpdateCommand(99L, "內容", null)))
+        assertThatThrownBy(() -> postService.update(new PostUpdateCommand(99L, "內容")))
                 .isInstanceOf(PostNotFoundException.class);
 
-        verify(postRepository, never()).update(anyLong(), any(), any());
+        verify(postRepository, never()).update(anyLong(), any());
     }
 
     @Test
@@ -101,9 +100,9 @@ class PostServiceTest {
         when(postRepository.findById(1L)).thenReturn(Optional.of(post(1L, "相同內容")));
         // MySQL 預設不帶 CLIENT_FOUND_ROWS，UPDATE 未實際改變值時 ROW_COUNT() 回 0。
         // 若以此判定「找不到」，重送相同內容的編輯會誤回 404。
-        when(postRepository.update(1L, "相同內容", null)).thenReturn(0);
+        when(postRepository.update(1L, "相同內容")).thenReturn(0);
 
-        assertThat(postService.update(new PostUpdateCommand(1L, "相同內容", null)).content())
+        assertThat(postService.update(new PostUpdateCommand(1L, "相同內容")).content())
                 .isEqualTo("相同內容");
     }
 
@@ -137,10 +136,10 @@ class PostServiceTest {
                 .doesNotContain("userId");
 
         when(postRepository.findById(1L)).thenReturn(Optional.of(post(1L, "他人的發文")));
-        when(postRepository.update(1L, "被其他登入者改掉", null)).thenReturn(1);
+        when(postRepository.update(1L, "被其他登入者改掉")).thenReturn(1);
 
         // post 的 userId 為 1，操作者身分完全不參與判斷
-        assertThat(postService.update(new PostUpdateCommand(1L, "被其他登入者改掉", null)).content())
+        assertThat(postService.update(new PostUpdateCommand(1L, "被其他登入者改掉")).content())
                 .isEqualTo("被其他登入者改掉");
     }
 }

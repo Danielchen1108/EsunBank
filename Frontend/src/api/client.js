@@ -111,3 +111,94 @@ export async function login(payload) {
 
   return result
 }
+
+/**
+ * 列出所有發文（題目 §3）。
+ *
+ * 後端 sp_post_list 刻意沒有 ORDER BY——題目未定義排序規則
+ * （SCOPE-BOUNDARY.md 列為 Out of Scope）。前端照回傳順序顯示，
+ * 不自行排序，避免實作出題目未定義的行為。
+ *
+ * 已軟刪除的發文不會出現（過濾條件在 Stored Procedure 內，ADR-004）。
+ *
+ * @returns {Promise<Array<{postId: number, userId: number, userName: string,
+ *   content: string, createdAt: string}>>}
+ */
+export function listPosts() {
+  return request('/api/posts')
+}
+
+/**
+ * 新增發文（題目 §3）。
+ *
+ * 只送 content：發文者由後端從登入憑證取得，不由前端指定——
+ * 否則任何人都能宣稱自己是別人（題目 §2）。
+ *
+ * 沒有 image：post.image 欄位保留於資料庫（題目第 2 頁），但題目沒有上傳功能，
+ * API 不開放填寫（F004-API.md § image 不在 API 契約內）。
+ *
+ * @param {{content: string}} payload
+ * @returns {Promise<{postId: number}>}
+ */
+export function createPost(payload) {
+  return request('/api/posts', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+/**
+ * 編輯發文（題目 §3）。
+ *
+ * 後端刻意不檢查操作者是否為發文者（F004-API.md § BG-4 裁決），
+ * 故任何登入者都能編輯任何一篇發文。前端不另外擋——授權判定在後端，
+ * 前端擋畫面既不是安全機制，也會與後端的實際行為不一致。
+ *
+ * @param {number} postId
+ * @param {{content: string}} payload
+ * @returns {Promise<{postId: number, userId: number, userName: string,
+ *   content: string, createdAt: string}>}
+ */
+export function updatePost(postId, payload) {
+  return request(`/api/posts/${postId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
+/**
+ * 刪除發文（題目 §3）。
+ *
+ * 後端為軟刪除，且於同一交易內連動標記該發文的留言（ADR-004）——
+ * 這是題目 §6 Transaction 要求的落地點。前端只需知道成功即代表兩者都已標記。
+ *
+ * 成功時後端回 204 No Content，沒有回應內容，故 request() 解析後為 null。
+ *
+ * @param {number} postId
+ * @returns {Promise<null>}
+ */
+export function deletePost(postId) {
+  return request(`/api/posts/${postId}`, {
+    method: 'DELETE',
+  })
+}
+
+/**
+ * 針對發文新增留言（題目 §4）。
+ *
+ * postId 放在路徑而非請求內容：留言依附於發文，歸屬關係直接呈現在 URI 上
+ * （RESTful，題目 §6）。留言者同樣由後端從登入憑證取得。
+ *
+ * 刻意沒有 listComments / updateComment / deleteComment：題目 §4 只寫「新增留言」，
+ * 依 SCOPE-BOUNDARY.md 判定原則 R-3 不實作，後端也沒有對應端點。
+ *
+ * @param {number} postId 目標發文，必須存在且未被刪除，否則後端回 404
+ * @param {{content: string}} payload
+ * @returns {Promise<{commentId: number}>}
+ */
+export function createComment(postId, payload) {
+  return request(`/api/posts/${postId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}

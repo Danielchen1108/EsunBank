@@ -12,6 +12,8 @@
     <nav>
       <RouterLink to="/register">註冊</RouterLink>
       <RouterLink to="/login">登入</RouterLink>
+      <!-- 未登入也顯示：能不能看由後端回 401 決定，前端不自行判斷權限 -->
+      <RouterLink to="/posts">發文</RouterLink>
       <RouterLink to="/health">連線狀態</RouterLink>
     </nav>
   </header>

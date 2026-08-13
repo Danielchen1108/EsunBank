@@ -2,6 +2,7 @@ package com.esunbank.social.presentation.dto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.lang.reflect.RecordComponent;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -47,13 +48,13 @@ class PostRequestValidationTest {
     @Test
     @DisplayName("新增發文：內容 2000 字元時通過（ADR-005 上限）")
     void acceptsContentAtMaxLength() {
-        assertThat(violationsOf(new CreatePostRequest(repeat('a', 2000), null))).isEmpty();
+        assertThat(violationsOf(new CreatePostRequest(repeat('a', 2000)))).isEmpty();
     }
 
     @Test
     @DisplayName("新增發文：內容 2001 字元時被拒")
     void rejectsContentOverMaxLength() {
-        assertThat(violationsOf(new CreatePostRequest(repeat('a', 2001), null)))
+        assertThat(violationsOf(new CreatePostRequest(repeat('a', 2001))))
                 .extracting(v -> v.getPropertyPath().toString())
                 .contains("content");
     }
@@ -61,30 +62,35 @@ class PostRequestValidationTest {
     @Test
     @DisplayName("新增發文：內容空白時被拒——發文必須有內容")
     void rejectsBlankContent() {
-        assertThat(violationsOf(new CreatePostRequest("   ", null)))
+        assertThat(violationsOf(new CreatePostRequest("   ")))
                 .extracting(v -> v.getPropertyPath().toString())
                 .contains("content");
     }
 
     @Test
-    @DisplayName("新增發文：圖片路徑未帶時通過——題目標示 Image 為非必要欄位")
-    void allowsNullImage() {
-        assertThat(violationsOf(new CreatePostRequest("今天天氣真好", null))).isEmpty();
-    }
+    @DisplayName("新增與編輯發文的請求皆不含 image——欄位保留於 schema，但 API 不開放填寫")
+    void requestsDoNotExposeImage() {
+        // 題目第 2 頁列有 Post.Image（標「非必要欄位」），故 DB schema 保留該欄；
+        // 但題目功能清單 §1–§4 沒有上傳功能，依 SCOPE-BOUNDARY.md R-3「沒寫就不用」，
+        // API 不開放填寫。此處把該裁決固化為可執行的規格，避免日後被當成漏掉的欄位補回來。
+        assertThat(CreatePostRequest.class.getRecordComponents())
+                .extracting(RecordComponent::getName)
+                .doesNotContain("image");
 
-    @Test
-    @DisplayName("新增發文：圖片路徑超過 255 時被拒——對應 post.image VARCHAR(255)")
-    void rejectsImagePathOverColumnWidth() {
-        assertThat(violationsOf(new CreatePostRequest("內容", repeat('p', 256))))
-                .extracting(v -> v.getPropertyPath().toString())
-                .contains("image");
+        assertThat(UpdatePostRequest.class.getRecordComponents())
+                .extracting(RecordComponent::getName)
+                .doesNotContain("image");
+
+        assertThat(PostResponse.class.getRecordComponents())
+                .extracting(RecordComponent::getName)
+                .doesNotContain("image");
     }
 
     @Test
     @DisplayName("編輯發文：內容 2000 字元時通過，2001 字元被拒——與新增同規則")
     void updateAppliesSameContentLimit() {
-        assertThat(violationsOf(new UpdatePostRequest(repeat('a', 2000), null))).isEmpty();
-        assertThat(violationsOf(new UpdatePostRequest(repeat('a', 2001), null)))
+        assertThat(violationsOf(new UpdatePostRequest(repeat('a', 2000)))).isEmpty();
+        assertThat(violationsOf(new UpdatePostRequest(repeat('a', 2001))))
                 .extracting(v -> v.getPropertyPath().toString())
                 .contains("content");
     }
@@ -92,7 +98,7 @@ class PostRequestValidationTest {
     @Test
     @DisplayName("編輯發文：內容空白時被拒")
     void updateRejectsBlankContent() {
-        assertThat(violationsOf(new UpdatePostRequest("", null)))
+        assertThat(violationsOf(new UpdatePostRequest("")))
                 .extracting(v -> v.getPropertyPath().toString())
                 .contains("content");
     }
