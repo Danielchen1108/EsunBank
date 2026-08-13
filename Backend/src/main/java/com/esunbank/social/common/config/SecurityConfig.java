@@ -2,6 +2,7 @@ package com.esunbank.social.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -51,6 +52,9 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/health").permitAll()
+                // 註冊必須免驗證——使用者此時尚無帳號（題目 §1）。
+                // 題目 §2 的驗證範圍僅涵蓋「發文或留言」，不含註冊。
+                .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .anyRequest().authenticated()
             )
             .httpBasic(basic -> {});
