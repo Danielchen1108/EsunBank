@@ -11,6 +11,7 @@
     <span class="brand">社群媒體系統</span>
     <nav>
       <RouterLink to="/register">註冊</RouterLink>
+      <RouterLink to="/login">登入</RouterLink>
       <RouterLink to="/health">連線狀態</RouterLink>
     </nav>
   </header>

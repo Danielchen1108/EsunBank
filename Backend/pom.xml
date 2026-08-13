@@ -28,6 +28,11 @@
 	</scm>
 	<properties>
 		<java.version>17</java.version>
+		<!--
+			JWT 函式庫版本。Spring Boot 的 BOM 未管理 jjwt，故須自行指定。
+			0.13.0 為撰寫當下 Maven Central 的最新釋出版（2025-08-20）。
+		-->
+		<jjwt.version>0.13.0</jjwt.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -45,6 +50,33 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+
+		<!--
+			JWT（ADR-003：登入驗證採 Spring Security + JWT）。
+
+			jjwt 刻意拆成三個 artifact：
+			  jjwt-api     — 編譯期唯一可見的介面，程式碼只依賴這一個
+			  jjwt-impl    — 實作，runtime 由 ServiceLoader 載入
+			  jjwt-jackson — JSON 序列化橋接；本專案已有 Jackson（webmvc starter）
+			impl 與 jackson 設為 runtime scope，使原始碼無法誤用內部實作類別。
+		-->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>${jjwt.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>${jjwt.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>${jjwt.version}</version>
+			<scope>runtime</scope>
 		</dependency>
 
 		<dependency>

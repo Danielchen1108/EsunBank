@@ -18,6 +18,7 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.esunbank.social.common.exception.DuplicatePhoneException;
+import com.esunbank.social.common.security.JwtTokenService;
 import com.esunbank.social.data.repository.UserRepository;
 
 /**
@@ -39,9 +40,13 @@ class UserServiceTest {
 
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
+    /**
+     * 註冊流程不使用 {@link JwtTokenService}（題目未要求註冊後自動登入），
+     * 但它是 {@link UserService} 的建構子相依，故仍須提供一個實例。
+     */
     private UserService service() {
         if (userService == null) {
-            userService = new UserService(userRepository, encoder);
+            userService = new UserService(userRepository, encoder, new JwtTokenService(""));
         }
         return userService;
     }
