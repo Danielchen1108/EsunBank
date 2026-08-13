@@ -14,6 +14,10 @@
  * 並以 {@code CallableStatement} 綁定參數，不得字串拼接（題目 §6 防 SQL Injection）。
  *
  * <p>設計說明：因題目要求透過 Stored Procedure 存取，本專案使用 Spring JDBC
- * （{@code JdbcClient} / {@code SimpleJdbcCall}）而非 JPA。
+ * （{@code JdbcTemplate} + {@code CallableStatement}）而非 JPA。
+ *
+ * <p>選 {@code JdbcTemplate} 而非 {@code SimpleJdbcCall}：後者會在首次呼叫時查詢
+ * 資料庫的中繼資料來推導參數，多一次往返且行為不夠顯眼；直接寫 {@code CallableStatement}
+ * 能讓「哪個參數綁到第幾個位置」在程式碼中一眼可見，這正是防 SQL Injection 的關鍵所在。
  */
 package com.esunbank.social.data;

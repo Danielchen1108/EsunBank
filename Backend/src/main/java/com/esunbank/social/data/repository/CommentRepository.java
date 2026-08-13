@@ -51,8 +51,14 @@ public class CommentRepository {
      * 呼叫 {@code sp_comment_create} 新增留言。
      *
      * <p>目標發文是否存在且未被軟刪除，由 SP 內部檢查（{@code F001-DB.md}
-     * §「軟刪除的讀取規則」）。放在 SP 而非應用層的理由：檢查與寫入在同一次
-     * 資料庫往返內完成，兩者之間沒有其他連線可以搶先軟刪除該發文。
+     * §「軟刪除的讀取規則」）。放在 SP 而非應用層的理由：省去一次資料庫往返，
+     * 並讓「檢查 + 寫入」這組邏輯集中在一處，不會散落到呼叫端各自重做。
+     *
+     * <p><b>已知限制（TECH_DEBT TD-002）：</b>「同一次往返」不等於「同一個交易」。
+     * {@code sp_comment_create} 沒有 {@code START TRANSACTION}，存在性檢查也沒有加鎖，
+     * 在 autocommit 下檢查與寫入是兩筆各自提交的交易，兩者之間仍有競態窗口。
+     * 若該窗口內目標發文被其他連線軟刪除，會產生一則未刪除的留言掛在已刪除的發文下。
+     * 此限制已由 owner 裁決暫不修，記於 {@code memory/TECH_DEBT.md} TD-002。
      *
      * @return 新增的 comment_id
      * @throws CommentTargetPostNotFoundException 目標發文不存在或已被軟刪除

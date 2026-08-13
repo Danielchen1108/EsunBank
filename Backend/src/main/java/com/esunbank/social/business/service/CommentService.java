@@ -30,9 +30,15 @@ public class CommentService {
      * （{@code F001-DB.md} §「交易邊界」已盤點，全案唯一的跨表寫入是刪除發文）。
      * <b>刻意不加上以求保險</b>——多餘的交易邊界會讓讀者誤以為此處有跨表異動。
      *
-     * <p>目標發文的存在性檢查刻意不在此重做：檢查與寫入若分成兩次資料庫往返，
-     * 兩者之間發文可能被軟刪除。{@code sp_comment_create} 在單次呼叫內完成兩者，
+     * <p>目標發文的存在性檢查刻意不在此重做：{@code sp_comment_create} 在單次呼叫內
+     * 就完成檢查與寫入，在此層再查一次只是多一次往返，且會讓同一條規則出現兩份實作。
      * 本層只負責把資料層拋出的領域例外原樣往上傳遞。
+     *
+     * <p><b>已知限制（TECH_DEBT TD-002）：</b>「單次呼叫」不等於「單一交易」——
+     * SP 內的檢查與寫入未包在交易中、檢查也未加鎖，兩者之間存在競態窗口；
+     * 若窗口內目標發文被軟刪除，會留下一則未刪除的留言掛在已刪除的發文下。
+     * 這不是本層加 {@code @Transactional} 能解決的（問題在 SP 內部），
+     * 已由 owner 裁決暫不修，記於 {@code memory/TECH_DEBT.md} TD-002。
      *
      * @return 新增的 comment_id
      * @throws com.esunbank.social.common.exception.CommentTargetPostNotFoundException
