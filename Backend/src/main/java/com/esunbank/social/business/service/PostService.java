@@ -36,7 +36,7 @@ public class PostService {
      * @return 新增的 post_id
      */
     public Long create(PostCreateCommand command) {
-        return postRepository.create(command.userId(), command.content(), command.image());
+        return postRepository.create(command.userId(), command.content());
     }
 
     /**
@@ -61,21 +61,20 @@ public class PostService {
      * 列數，送出與原文相同的內容時為 0。若據此回 404，重送相同內容的編輯會被誤判為找不到。
      *
      * @return 更新後的發文。以先前查得的資料換上新內容組成，避免為了回應再查一次資料庫——
-     *         {@code sp_post_update} 只異動 content 與 image，其餘欄位不變
+     *         {@code sp_post_update} 只異動 content（image 由資料層固定傳 null），其餘欄位不變
      * @throws PostNotFoundException 發文不存在或已被軟刪除
      */
     public Post update(PostUpdateCommand command) {
         Post existing = postRepository.findById(command.postId())
                 .orElseThrow(() -> new PostNotFoundException(command.postId()));
 
-        postRepository.update(command.postId(), command.content(), command.image());
+        postRepository.update(command.postId(), command.content());
 
         return new Post(
                 existing.postId(),
                 existing.userId(),
                 existing.userName(),
                 command.content(),
-                command.image(),
                 existing.createdAt());
     }
 

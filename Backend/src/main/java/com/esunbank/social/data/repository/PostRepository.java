@@ -41,17 +41,19 @@ public class PostRepository {
      * 呼叫 {@code sp_post_create} 新增發文。
      *
      * @param userId 發文者，取自登入憑證而非請求內容（題目 §2）
-     * @param image  圖片路徑，可為 null（題目第 2 頁標示 Image 為非必要欄位）
      * @return 新增的 post_id
      */
-    public Long create(Long userId, String content, String image) {
+    public Long create(Long userId, String content) {
         return jdbcTemplate.execute(
                 (java.sql.Connection connection) -> {
                     CallableStatement statement =
                             connection.prepareCall("{call sp_post_create(?, ?, ?)}");
                     statement.setLong(1, userId);
                     statement.setString(2, content);
-                    statement.setString(3, image);
+                    // image：欄位保留於 schema（題目第 2 頁列有 Image，標示為非必要欄位），
+                    // 但題目功能清單無上傳功能，故 API 不開放填寫（SCOPE-BOUNDARY.md R-3）。
+                    // SP 的參數維持不變（DB 腳本不因應用層裁決而改），此處固定綁 NULL。
+                    statement.setNull(3, java.sql.Types.VARCHAR);
                     return statement;
                 },
                 (CallableStatement statement) -> {
@@ -123,16 +125,21 @@ public class PostRepository {
      * 送出與原文完全相同的內容時會回 0，但發文確實存在。存在性請以
      * {@link #findById(Long)} 判斷（業務層即如此處理）。
      *
+     * <p><b>image 固定傳 null：</b>理由同 {@link #create(Long, String)}。
+     * {@code sp_post_update} 為整體取代語意（{@code SET image = p_image}），
+     * 故編輯發文會一併把 image 清為 NULL——在沒有上傳功能的前提下，
+     * 該欄唯一的來源是 {@code DB/03_DML.sql} 的種子資料。
+     *
      * @return 實際變更的列數
      */
-    public int update(Long postId, String content, String image) {
+    public int update(Long postId, String content) {
         return jdbcTemplate.execute(
                 (java.sql.Connection connection) -> {
                     CallableStatement statement =
                             connection.prepareCall("{call sp_post_update(?, ?, ?)}");
                     statement.setLong(1, postId);
                     statement.setString(2, content);
-                    statement.setString(3, image);
+                    statement.setNull(3, java.sql.Types.VARCHAR);
                     return statement;
                 },
                 (CallableStatement statement) -> {
@@ -181,7 +188,13 @@ public class PostRepository {
         throw new IllegalStateException(procedureName + " 未回傳 affected_rows");
     }
 
-    /** 資料列 → 領域模型（資料層職責，見 {@code data/package-info.java}）。 */
+    /**
+     * 資料列 → 領域模型（資料層職責，見 {@code data/package-info.java}）。
+     *
+     * <p>SP 的結果集仍含 {@code image} 欄，此處刻意不映射——欄位保留於 schema
+     * （題目第 2 頁），但無上傳功能故 API 不開放（SCOPE-BOUNDARY.md R-3），
+     * 帶到上層只會是一個永遠為 null 的欄位。
+     */
     private Post mapPost(ResultSet resultSet) throws SQLException {
         Timestamp createdAt = resultSet.getTimestamp("created_at");
 
@@ -190,7 +203,6 @@ public class PostRepository {
                 resultSet.getLong("user_id"),
                 resultSet.getString("user_name"),
                 resultSet.getString("content"),
-                resultSet.getString("image"),
                 createdAt == null ? null : createdAt.toLocalDateTime());
     }
 }

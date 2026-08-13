@@ -12,16 +12,17 @@ import jakarta.validation.constraints.Size;
  * <p>內容長度上限 2000 與 {@code post.content VARCHAR(2000)} 一致（ADR-005）。
  * 在此先擋下，可讓超長輸入得到可讀的 400 而非資料庫層的 500。
  *
+ * <p><b>不含 image：</b>{@code post.image} 欄位保留於 schema（題目第 2 頁列有 Image，
+ * 標示為非必要欄位），但題目功能清單 §1–§4 沒有任何上傳功能，
+ * 依「沒寫就不用」（`SCOPE-BOUNDARY.md` 判定原則 R-3）<b>API 不開放填寫</b>。
+ * 沒有上傳端點時開放這個欄位，等於讓用戶端送一個沒有來源的路徑字串——
+ * 寫得進去，卻永遠指不到任何檔案。
+ *
  * @param content 發文內容，必填，最長 2000 字元
- * @param image   圖片路徑，可不填。題目第 2 頁標示 Image 為非必要欄位；
- *                此處僅接受路徑字串，<b>不含上傳功能</b>（`SCOPE-BOUNDARY.md` Out of Scope）
  */
 public record CreatePostRequest(
 
         @NotBlank(message = "發文內容為必填")
         @Size(max = 2000, message = "發文內容不可超過 2000 字")
-        String content,
-
-        @Size(max = 255, message = "圖片路徑不可超過 255 字")
-        String image) {
+        String content) {
 }

@@ -55,7 +55,7 @@ class PostRepositoryIntegrationTest {
     private JdbcTemplate jdbcTemplate;
 
     private Long insertPostWithComment(String content) {
-        Long postId = postRepository.create(SEED_USER_ID, content, null);
+        Long postId = postRepository.create(SEED_USER_ID, content);
         jdbcTemplate.update(
                 "INSERT INTO `comment` (user_id, post_id, content) VALUES (?, ?, ?)",
                 SEED_USER_ID, postId, "整合測試留言");
@@ -75,7 +75,7 @@ class PostRepositoryIntegrationTest {
     @Test
     @DisplayName("新增發文：sp_post_create 回傳新 post_id，內容與作者正確（AC-1、AC-6、AC-10）")
     void createsPost() {
-        Long postId = postRepository.create(SEED_USER_ID, "整合測試發文 🎯", null);
+        Long postId = postRepository.create(SEED_USER_ID, "整合測試發文 🎯");
 
         assertThat(postId).isNotNull();
 
@@ -90,8 +90,8 @@ class PostRepositoryIntegrationTest {
     @Test
     @DisplayName("列出所有發文：sp_post_list 帶 is_deleted = FALSE，已刪除的不出現（AC-3、ADR-004）")
     void listExcludesSoftDeletedPosts() {
-        Long visibleId = postRepository.create(SEED_USER_ID, "這篇看得見", null);
-        Long deletedId = postRepository.create(SEED_USER_ID, "這篇會被刪除", null);
+        Long visibleId = postRepository.create(SEED_USER_ID, "這篇看得見");
+        Long deletedId = postRepository.create(SEED_USER_ID, "這篇會被刪除");
         postRepository.softDelete(deletedId);
 
         List<Post> posts = postRepository.findAll();
@@ -103,7 +103,7 @@ class PostRepositoryIntegrationTest {
     @Test
     @DisplayName("取單筆發文：已軟刪除者查不到（ADR-004 讀取過濾）")
     void findByIdExcludesSoftDeletedPost() {
-        Long postId = postRepository.create(SEED_USER_ID, "即將被刪除", null);
+        Long postId = postRepository.create(SEED_USER_ID, "即將被刪除");
         postRepository.softDelete(postId);
 
         assertThat(postRepository.findById(postId)).isEmpty();
@@ -112,26 +112,27 @@ class PostRepositoryIntegrationTest {
     @Test
     @DisplayName("編輯發文：內容確實更新（AC-4）")
     void updatesPostContent() {
-        Long postId = postRepository.create(SEED_USER_ID, "原始內容", null);
+        Long postId = postRepository.create(SEED_USER_ID, "原始內容");
 
-        int affected = postRepository.update(postId, "修改後內容", "/images/post/x.jpg");
+        int affected = postRepository.update(postId, "修改後內容");
 
         assertThat(affected).isEqualTo(1);
         assertThat(postRepository.findById(postId))
                 .get()
-                .satisfies(p -> {
-                    assertThat(p.content()).isEqualTo("修改後內容");
-                    assertThat(p.image()).isEqualTo("/images/post/x.jpg");
-                });
+                .satisfies(p -> assertThat(p.content()).isEqualTo("修改後內容"));
+        // image 不由 API 提供（欄位保留於 schema 但無上傳功能，SCOPE-BOUNDARY.md R-3），
+        // 資料層固定綁 NULL；sp_post_update 為整體取代語意，故編輯後該欄為 NULL。
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT image FROM `post` WHERE post_id = ?", String.class, postId)).isNull();
     }
 
     @Test
     @DisplayName("編輯已軟刪除的發文：不生效——sp_post_update 帶 is_deleted = FALSE")
     void updateDoesNotTouchSoftDeletedPost() {
-        Long postId = postRepository.create(SEED_USER_ID, "刪除前的內容", null);
+        Long postId = postRepository.create(SEED_USER_ID, "刪除前的內容");
         postRepository.softDelete(postId);
 
-        int affected = postRepository.update(postId, "不該寫進去", null);
+        int affected = postRepository.update(postId, "不該寫進去");
 
         assertThat(affected).isZero();
         String content = jdbcTemplate.queryForObject(
@@ -161,7 +162,7 @@ class PostRepositoryIntegrationTest {
     @Test
     @DisplayName("重複刪除同一發文：第二次回報 0 列，供應用層判定 404")
     void deletingTwiceAffectsNoRowsTheSecondTime() {
-        Long postId = postRepository.create(SEED_USER_ID, "刪兩次", null);
+        Long postId = postRepository.create(SEED_USER_ID, "刪兩次");
 
         assertThat(postRepository.softDelete(postId)).isEqualTo(1);
         assertThat(postRepository.softDelete(postId)).isZero();
@@ -199,7 +200,7 @@ class PostRepositoryIntegrationTest {
     void treatsInjectionPayloadAsPlainText() {
         String payload = "'); DROP TABLE `post`; --";
 
-        Long postId = postRepository.create(SEED_USER_ID, payload, null);
+        Long postId = postRepository.create(SEED_USER_ID, payload);
 
         assertThat(postRepository.findById(postId)).get()
                 .satisfies(p -> assertThat(p.content()).isEqualTo(payload));

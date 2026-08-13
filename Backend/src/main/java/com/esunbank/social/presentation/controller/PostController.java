@@ -75,8 +75,7 @@ public class PostController {
 
         Long postId = postService.create(new PostCreateCommand(
                 currentUser.userId(),
-                request.content(),
-                request.image()));
+                request.content()));
 
         return ResponseEntity.status(HttpStatus.CREATED).body(new CreatePostResponse(postId));
     }
@@ -101,7 +100,7 @@ public class PostController {
     /**
      * 編輯發文（AC-4）。
      *
-     * <p>PUT 而非 PATCH：請求提供 content 與 image 的完整新值，為整體取代語意。
+     * <p>PUT 而非 PATCH：請求提供發文可修改欄位（content）的完整新值，為整體取代語意。
      *
      * <p>不檢查操作者是否為發文者——見類別說明的 BG-4 裁決。
      */
@@ -112,8 +111,7 @@ public class PostController {
 
         Post updated = postService.update(new PostUpdateCommand(
                 postId,
-                request.content(),
-                request.image()));
+                request.content()));
 
         return ResponseEntity.ok(PostResponse.from(updated));
     }
