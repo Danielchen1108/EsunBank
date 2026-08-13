@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.esunbank.social.business.service.Post;
+import com.esunbank.social.data.repository.PostRepository.PostRow;
 
 /**
  * 發文資料層對真實 MySQL 的整合測試（F004 AC-9、AC-10、AC-11）。
@@ -79,7 +79,7 @@ class PostRepositoryIntegrationTest {
 
         assertThat(postId).isNotNull();
 
-        Optional<Post> found = postRepository.findById(postId);
+        Optional<PostRow> found = postRepository.findById(postId);
         assertThat(found).isPresent();
         assertThat(found.get().content()).isEqualTo("整合測試發文 🎯");
         assertThat(found.get().userId()).isEqualTo(SEED_USER_ID);
@@ -94,10 +94,10 @@ class PostRepositoryIntegrationTest {
         Long deletedId = postRepository.create(SEED_USER_ID, "這篇會被刪除");
         postRepository.softDelete(deletedId);
 
-        List<Post> posts = postRepository.findAll();
+        List<PostRow> posts = postRepository.findAll();
 
-        assertThat(posts).extracting(Post::postId).contains(visibleId);
-        assertThat(posts).extracting(Post::postId).doesNotContain(deletedId);
+        assertThat(posts).extracting(PostRow::postId).contains(visibleId);
+        assertThat(posts).extracting(PostRow::postId).doesNotContain(deletedId);
     }
 
     @Test
@@ -155,7 +155,7 @@ class PostRepositoryIntegrationTest {
         assertThat(postDeletedFlag(postId)).isEqualTo(1);
         assertThat(commentDeletedFlags(postId)).containsExactly(1);
         // ADR-004 最常見的缺陷：讀取漏帶過濾條件，已刪除的內容重新出現
-        assertThat(postRepository.findAll()).extracting(Post::postId).doesNotContain(postId);
+        assertThat(postRepository.findAll()).extracting(PostRow::postId).doesNotContain(postId);
         assertThat(postRepository.findById(postId)).isEmpty();
     }
 

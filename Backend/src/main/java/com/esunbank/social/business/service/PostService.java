@@ -48,7 +48,9 @@ public class PostService {
      * <p>不帶出留言（OQ-1 決定），排序與分頁亦不實作（`SCOPE-BOUNDARY.md` Out of Scope）。
      */
     public List<Post> listAll() {
-        return postRepository.findAll();
+        return postRepository.findAll().stream()
+                .map(PostService::toDomain)
+                .toList();
     }
 
     /**
@@ -65,7 +67,7 @@ public class PostService {
      * @throws PostNotFoundException 發文不存在或已被軟刪除
      */
     public Post update(PostUpdateCommand command) {
-        Post existing = postRepository.findById(command.postId())
+        PostRepository.PostRow existing = postRepository.findById(command.postId())
                 .orElseThrow(() -> new PostNotFoundException(command.postId()));
 
         postRepository.update(command.postId(), command.content());
@@ -93,5 +95,21 @@ public class PostService {
         if (postRepository.softDelete(postId) == 0) {
             throw new PostNotFoundException(postId);
         }
+    }
+
+    /**
+     * 資料列 → 領域模型。
+     *
+     * <p>映射放在業務層而非資料層，是為了維持 {@code data/package-info.java} 宣告的
+     * 依賴方向：資料層不得依賴業務層。資料層只回傳自己的
+     * {@link PostRepository.PostRow}，由本層轉為領域模型。
+     */
+    private static Post toDomain(PostRepository.PostRow row) {
+        return new Post(
+                row.postId(),
+                row.userId(),
+                row.userName(),
+                row.content(),
+                row.createdAt());
     }
 }

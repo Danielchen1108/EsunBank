@@ -11,7 +11,6 @@ import java.util.Optional;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-import com.esunbank.social.business.service.Post;
 
 /**
  * 發文資料存取（資料層）。
@@ -75,16 +74,16 @@ public class PostRepository {
      * <p>結果順序未定義：{@code sp_post_list} 刻意不寫 ORDER BY——題目未定義排序規則
      * （`SCOPE-BOUNDARY.md` 列為 Out of Scope）。本層不自行補排序，避免實作出題目沒要求的行為。
      */
-    public List<Post> findAll() {
+    public List<PostRow> findAll() {
         return jdbcTemplate.execute(
                 (java.sql.Connection connection) -> connection.prepareCall("{call sp_post_list()}"),
                 (CallableStatement statement) -> {
                     statement.execute();
-                    List<Post> posts = new ArrayList<>();
+                    List<PostRow> posts = new ArrayList<>();
                     try (ResultSet resultSet = statement.getResultSet()) {
                         if (resultSet != null) {
                             while (resultSet.next()) {
-                                posts.add(mapPost(resultSet));
+                                posts.add(mapRow(resultSet));
                             }
                         }
                     }
@@ -98,7 +97,7 @@ public class PostRepository {
      * <p>回 {@link Optional#empty()} 有兩種可能：發文不存在，或已被軟刪除。
      * 對呼叫端而言兩者等價——已刪除的發文不該再被看見或編輯（ADR-004）。
      */
-    public Optional<Post> findById(Long postId) {
+    public Optional<PostRow> findById(Long postId) {
         return jdbcTemplate.execute(
                 (java.sql.Connection connection) -> {
                     CallableStatement statement =
@@ -110,10 +109,10 @@ public class PostRepository {
                     statement.execute();
                     try (ResultSet resultSet = statement.getResultSet()) {
                         if (resultSet != null && resultSet.next()) {
-                            return Optional.of(mapPost(resultSet));
+                            return Optional.of(mapRow(resultSet));
                         }
                     }
-                    return Optional.<Post>empty();
+                    return Optional.<PostRow>empty();
                 });
     }
 
@@ -195,14 +194,35 @@ public class PostRepository {
      * （題目第 2 頁），但無上傳功能故 API 不開放（SCOPE-BOUNDARY.md R-3），
      * 帶到上層只會是一個永遠為 null 的欄位。
      */
-    private Post mapPost(ResultSet resultSet) throws SQLException {
+    private PostRow mapRow(ResultSet resultSet) throws SQLException {
         Timestamp createdAt = resultSet.getTimestamp("created_at");
 
-        return new Post(
+        return new PostRow(
                 resultSet.getLong("post_id"),
                 resultSet.getLong("user_id"),
                 resultSet.getString("user_name"),
                 resultSet.getString("content"),
                 createdAt == null ? null : createdAt.toLocalDateTime());
+    }
+
+    /**
+     * 發文的資料列表示（資料層）。
+     *
+     * <p><b>為什麼不直接回傳業務層的領域模型：</b>依 {@code data/package-info.java}
+     * 宣告的依賴方向，資料層不得依賴業務層。原本 {@code PostRepository} 直接回傳
+     * {@code business.service.Post}，形成資料層 → 業務層的反向依賴，與該宣告矛盾。
+     *
+     * <p>改由本層定義自己的資料列型別，再交給業務層映射為領域模型——
+     * 與 {@code UserRepository.UserCredentials} 一致的做法。
+     *
+     * <p>不含 {@code is_deleted}：讀取用的 SP 已保證只回傳未刪除的資料（ADR-004）。
+     * 不含 {@code image}：欄位保留於 schema，但 API 不開放（SCOPE-BOUNDARY.md R-3）。
+     */
+    public record PostRow(
+            Long postId,
+            Long userId,
+            String userName,
+            String content,
+            java.time.LocalDateTime createdAt) {
     }
 }

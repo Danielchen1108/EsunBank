@@ -1,43 +1,40 @@
 package com.esunbank.social.presentation.controller;
 
-import java.sql.Connection;
 import java.util.Map;
-
-import javax.sql.DataSource;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.esunbank.social.business.service.HealthService;
+
 /**
  * 健康檢查（展示層）。
  *
- * <p>R101 專案骨架的驗證端點：確認應用程式可啟動，且能連上 MySQL。
+ * <p>回報題目 §5 三層式架構中 Application Server 與資料庫之間是否連通。
  *
- * <p>非題目要求的功能，僅用於骨架階段驗證三層式架構（題目 §5）中
- * Application Server 與資料庫之間確實連通。
+ * <p>本控制器不持有 {@code DataSource}——依 {@code presentation/package-info.java}
+ * 的宣告，展示層不得直接存取資料層。連線檢查經由
+ * {@link HealthService} → {@code HealthRepository} 逐層下達。
+ *
+ * <p>此端點在 {@code SecurityConfig} 白名單內（免驗證）：它只回報連通與否，
+ * 不含任何使用者資料。
  */
 @RestController
 @RequestMapping("/api")
 public class HealthController {
 
-    private final DataSource dataSource;
+    private final HealthService healthService;
 
-    public HealthController(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public HealthController(HealthService healthService) {
+        this.healthService = healthService;
     }
 
     @GetMapping("/health")
     public ResponseEntity<Map<String, String>> health() {
-        String database;
-        try (Connection connection = dataSource.getConnection()) {
-            database = connection.isValid(2) ? "UP" : "DOWN";
-        } catch (Exception e) {
-            database = "DOWN: " + e.getClass().getSimpleName();
-        }
         return ResponseEntity.ok(Map.of(
-                "application", "UP",
-                "database", database));
+                "application", healthService.applicationStatus(),
+                "database", healthService.databaseStatus()));
     }
 }

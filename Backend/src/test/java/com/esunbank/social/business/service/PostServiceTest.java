@@ -22,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.esunbank.social.data.repository.PostRepository;
+import com.esunbank.social.data.repository.PostRepository.PostRow;
 
 /**
  * 發文業務邏輯（F004 AC-1、AC-3、AC-4、AC-5、AC-11）。
@@ -45,8 +46,15 @@ class PostServiceTest {
     @InjectMocks
     private PostService postService;
 
-    private Post post(long postId, String content) {
-        return new Post(postId, 1L, "陳大文", content, LocalDateTime.of(2026, 8, 13, 10, 0));
+    /**
+     * 資料層回傳的資料列。
+     *
+     * <p>回傳 {@link PostRow} 而非領域模型 {@link Post}：資料層不得依賴業務層
+     * （{@code data/package-info.java}），故 repository 回傳自己的資料列型別，
+     * 由 {@code PostService} 轉為領域模型。本測試驗證的正是這段映射。
+     */
+    private PostRow post(long postId, String content) {
+        return new PostRow(postId, 1L, "陳大文", content, LocalDateTime.of(2026, 8, 13, 10, 0));
     }
 
     @Test
