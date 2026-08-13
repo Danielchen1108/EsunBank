@@ -4,6 +4,7 @@
 !/Frontend/
 !/Backend/
 !/Document/
+!/DB/
 
 /Document/*.pdf
 !/Document/.gitkeep
