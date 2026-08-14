@@ -2,6 +2,8 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { register } from '../api/client.js'
+import AuthLayout from '../components/AuthLayout.vue'
+import PasswordField from '../components/PasswordField.vue'
 
 /**
  * 註冊畫面（題目 §1）。
@@ -57,35 +59,50 @@ async function onSubmit() {
 </script>
 
 <template>
-  <section>
-    <h1>註冊</h1>
-    <p class="lede">以手機號碼建立帳號，註冊後即可登入發文與留言。</p>
-
+  <AuthLayout title="註冊" lede="以手機號碼建立帳號，註冊後即可登入。">
     <form novalidate @submit.prevent="onSubmit">
       <label>
         手機號碼
-        <input v-model.trim="form.phone" maxlength="10" autocomplete="tel" />
+        <!--
+          inputmode="numeric" 讓行動裝置直接跳出數字鍵盤。
+          type 不用 number：會帶出上下微調鈕，且會吃掉開頭的 0。
+        -->
+        <input
+          v-model.trim="form.phone"
+          type="text"
+          inputmode="numeric"
+          maxlength="10"
+          autocomplete="tel"
+          placeholder="09xxxxxxxx"
+        />
         <small v-if="fieldErrors.phone" class="error">{{ fieldErrors.phone }}</small>
         <small v-else-if="form.phone && !phoneLooksValid" class="hint">手機號碼須為 10 碼</small>
       </label>
 
       <label>
         使用者名稱
-        <input v-model.trim="form.userName" maxlength="50" />
+        <input v-model.trim="form.userName" maxlength="50" autocomplete="nickname" />
         <small v-if="fieldErrors.userName" class="error">{{ fieldErrors.userName }}</small>
       </label>
 
       <label>
         電子郵件
-        <input v-model.trim="form.email" maxlength="255" autocomplete="email" />
+        <!-- type="email" 讓行動鍵盤帶出 @ 與 .com -->
+        <input
+          v-model.trim="form.email"
+          type="email"
+          maxlength="255"
+          autocomplete="email"
+        />
         <small v-if="fieldErrors.email" class="error">{{ fieldErrors.email }}</small>
       </label>
 
-      <label>
-        密碼
-        <input v-model="form.password" type="password" autocomplete="new-password" />
-        <small v-if="fieldErrors.password" class="error">{{ fieldErrors.password }}</small>
-      </label>
+      <PasswordField
+        v-model="form.password"
+        label="密碼"
+        autocomplete="new-password"
+        :error="fieldErrors.password ?? ''"
+      />
 
       <label>
         自我介紹<span class="optional">（選填）</span>
@@ -98,7 +115,7 @@ async function onSubmit() {
       </button>
     </form>
 
-    <p v-if="generalError" class="error banner">{{ generalError }}</p>
+    <p v-if="generalError" class="error banner" role="alert">{{ generalError }}</p>
 
     <p v-if="successUserId" class="success banner" role="status">
       註冊成功，使用者編號 {{ successUserId }}。正在帶你去登入…
@@ -107,51 +124,14 @@ async function onSubmit() {
     <p v-else class="switch">
       已經有帳號了？<RouterLink to="/login">直接登入</RouterLink>
     </p>
-  </section>
+  </AuthLayout>
 </template>
 
 <style scoped>
-/*
- * 表單頁（註冊／登入）共用版型：窄欄、置中偏上。
- * 不置中於垂直中線——表單長度不一，靠上對齊時各頁的視覺起點一致。
- */
-/*
- * 與其他頁面共用 46rem 的內容欄，表單本身再收窄至 26rem 並靠左。
- * 表單置中於自己的窄欄看似合理，但左緣會與頁首的品牌區錯開——
- * 同一條垂直基準線貫穿所有頁面，比每頁各自置中更安定。
- */
-section {
-  max-width: 46rem;
-  margin: 0 auto;
-  padding: 3rem 1.5rem 5rem;
-}
-
-form,
-h1,
-.lede,
-.banner {
-  max-width: 26rem;
-}
-
-h1 {
-  margin-bottom: 0.35rem;
-}
-
-.lede {
-  margin: 0 0 2rem;
-  font-size: 0.9rem;
-  color: var(--stone-400);
-}
-
 form {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
-  padding: 1.5rem;
-  background: var(--mist-0);
-  border: 1px solid var(--stone-200);
-  border-top: 3px solid var(--jade-700);
-  border-radius: var(--r-lg);
+  gap: 1.15rem;
 }
 
 label {
@@ -180,10 +160,6 @@ small {
   color: var(--stone-400);
 }
 
-.success {
-  color: var(--jade-700);
-}
-
 .banner {
   margin-top: 1.25rem;
   padding: 0.85rem 1rem;
@@ -196,12 +172,14 @@ small {
 }
 
 .banner.success {
+  color: var(--jade-700);
   background: var(--jade-100);
 }
 
 .switch {
-  max-width: 26rem;
-  margin-top: 1.25rem;
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--stone-200);
   font-size: 0.88rem;
   color: var(--stone-400);
 }
@@ -216,11 +194,5 @@ small {
 
 .switch a:hover {
   border-bottom-color: var(--jade-700);
-}
-
-@media (max-width: 34rem) {
-  section {
-    padding: 2rem 1rem 4rem;
-  }
 }
 </style>

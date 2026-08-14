@@ -1,5 +1,5 @@
 <script setup>
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { authState, logout } from './api/client.js'
 
 /**
@@ -29,11 +29,11 @@ import { authState, logout } from './api/client.js'
  * 列表動畫（TransitionGroup）保留：它動的是已經可見的頁面裡的單一項目，
  * 即使動畫沒跑完，最壞情況也只是該項目沒有動畫，而不是整頁消失。
  *
- * 導覽列依登入狀態切換：未登入時只給註冊與登入兩條路，
- * 已登入時顯示目前身分與登出。**選單不是權限控制**——真正的把關在後端，
- * 這裡只是不讓使用者看到對他無效的選項。
+ * 導覽列依登入狀態切換，並在登入／註冊頁完全不出現（route.meta.hideChrome）。
+ * **選單不是權限控制**——真正的把關在後端，這裡只是不讓使用者看到對他無效的選項。
  */
 const router = useRouter()
+const route = useRoute()
 
 function onLogout() {
   logout()
@@ -42,7 +42,7 @@ function onLogout() {
 </script>
 
 <template>
-  <header>
+  <header v-if="!route.meta.hideChrome">
     <!-- 等高線：純裝飾，對輔助技術隱藏 -->
     <svg
       class="contour"

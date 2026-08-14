@@ -2,6 +2,8 @@
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { login } from '../api/client.js'
+import AuthLayout from '../components/AuthLayout.vue'
+import PasswordField from '../components/PasswordField.vue'
 
 /**
  * 登入畫面（題目 §2）。
@@ -58,22 +60,32 @@ async function onSubmit() {
 </script>
 
 <template>
-  <section>
-    <h1>登入</h1>
-    <p class="lede">以註冊時使用的手機號碼登入。</p>
-
+  <AuthLayout title="登入" lede="使用註冊時的手機號碼登入。">
     <form novalidate @submit.prevent="onSubmit">
       <label>
         手機號碼
-        <input v-model.trim="form.phone" maxlength="10" autocomplete="tel" />
+        <!--
+          inputmode="numeric" 讓行動裝置直接跳出數字鍵盤——
+          手機號碼欄位卻要使用者自己切換鍵盤，是很容易被忽略的摩擦。
+          type 仍為 text：type="number" 會帶出上下微調鈕，且會吃掉開頭的 0。
+        -->
+        <input
+          v-model.trim="form.phone"
+          type="text"
+          inputmode="numeric"
+          maxlength="10"
+          autocomplete="tel"
+          placeholder="09xxxxxxxx"
+        />
         <small v-if="fieldErrors.phone" class="error">{{ fieldErrors.phone }}</small>
       </label>
 
-      <label>
-        密碼
-        <input v-model="form.password" type="password" autocomplete="current-password" />
-        <small v-if="fieldErrors.password" class="error">{{ fieldErrors.password }}</small>
-      </label>
+      <PasswordField
+        v-model="form.password"
+        label="密碼"
+        autocomplete="current-password"
+        :error="fieldErrors.password ?? ''"
+      />
 
       <button type="submit" :disabled="submitting">
         {{ submitting ? '登入中…' : '登入' }}
@@ -85,51 +97,14 @@ async function onSubmit() {
     <p class="switch">
       還沒有帳號？<RouterLink to="/register">註冊一個</RouterLink>
     </p>
-  </section>
+  </AuthLayout>
 </template>
 
 <style scoped>
-/*
- * 表單頁（註冊／登入）共用版型：窄欄、置中偏上。
- * 不置中於垂直中線——表單長度不一，靠上對齊時各頁的視覺起點一致。
- */
-/*
- * 與其他頁面共用 46rem 的內容欄，表單本身再收窄至 26rem 並靠左。
- * 表單置中於自己的窄欄看似合理，但左緣會與頁首的品牌區錯開——
- * 同一條垂直基準線貫穿所有頁面，比每頁各自置中更安定。
- */
-section {
-  max-width: 46rem;
-  margin: 0 auto;
-  padding: 3rem 1.5rem 5rem;
-}
-
-form,
-h1,
-.lede,
-.banner {
-  max-width: 26rem;
-}
-
-h1 {
-  margin-bottom: 0.35rem;
-}
-
-.lede {
-  margin: 0 0 2rem;
-  font-size: 0.9rem;
-  color: var(--stone-400);
-}
-
 form {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
-  padding: 1.5rem;
-  background: var(--mist-0);
-  border: 1px solid var(--stone-200);
-  border-top: 3px solid var(--jade-700);
-  border-radius: var(--r-lg);
+  gap: 1.15rem;
 }
 
 label {
@@ -138,11 +113,6 @@ label {
   gap: 0.35rem;
   font-size: 0.85rem;
   font-weight: 600;
-}
-
-.optional {
-  font-weight: 400;
-  color: var(--stone-400);
 }
 
 small {
@@ -154,32 +124,18 @@ small {
   color: var(--clay-600);
 }
 
-.hint {
-  color: var(--stone-400);
-}
-
-.success {
-  color: var(--jade-700);
-}
-
 .banner {
   margin-top: 1.25rem;
   padding: 0.85rem 1rem;
   border-radius: var(--r-md);
+  background: var(--clay-50);
   font-size: 0.9rem;
 }
 
-.banner.error {
-  background: var(--clay-50);
-}
-
-.banner.success {
-  background: var(--jade-100);
-}
-
 .switch {
-  max-width: 26rem;
-  margin-top: 1.25rem;
+  margin-top: 1.75rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--stone-200);
   font-size: 0.88rem;
   color: var(--stone-400);
 }
@@ -194,11 +150,5 @@ small {
 
 .switch a:hover {
   border-bottom-color: var(--jade-700);
-}
-
-@media (max-width: 34rem) {
-  section {
-    padding: 2rem 1rem 4rem;
-  }
 }
 </style>

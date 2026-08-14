@@ -23,6 +23,11 @@ import { isLoggedIn } from '../api/client.js'
  * 前端無從驗證簽章，也不該試。憑證過期或偽造由後端回 401，
  * 前端在 API 層處理（見 PostsView 的 401 分支）。
  */
+/**
+ * `meta.hideChrome`：登入與註冊不套用應用程式外框（導覽列）。
+ * 導覽列是給已進到系統裡的人用的；在登入頁頂一條寫著「登入／註冊」的列，
+ * 等於把使用者當下唯一該做的事降級成選單裡的一個選項。
+ */
 const routes = [
   {
     path: '/',
@@ -33,13 +38,13 @@ const routes = [
     path: '/register',
     name: 'register',
     component: RegisterView,
-    meta: { guestOnly: true },
+    meta: { guestOnly: true, hideChrome: true },
   },
   {
     path: '/login',
     name: 'login',
     component: LoginView,
-    meta: { guestOnly: true },
+    meta: { guestOnly: true, hideChrome: true },
   },
   {
     path: '/posts',

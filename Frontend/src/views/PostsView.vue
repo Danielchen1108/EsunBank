@@ -472,8 +472,18 @@ h1 {
     padding: 1.75rem 1rem 4rem;
   }
 
-  .comment-form {
+  /* 留言列在窄螢幕改為上下堆疊：並排時輸入框會被壓到放不下一行字 */
+  .comment {
     flex-direction: column;
+  }
+
+  .comment button {
+    align-self: flex-end;
+  }
+
+  /* 編輯／刪除在窄螢幕維持並排，但加大點擊區——手指不是滑鼠指標 */
+  .actions button {
+    padding: 0.5rem 1rem;
   }
 }
 </style>
