@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, ref } from 'vue'
+import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createComment, createPost, deletePost, listPosts, updatePost } from '../api/client.js'
 
@@ -45,6 +45,23 @@ const editError = ref('')
 const saving = ref(false)
 
 // 留言：每篇發文各有自己的輸入框與狀態，以 postId 為鍵
+/**
+ * 目前展開的「⋯」選單所屬的發文。
+ *
+ * 編輯與刪除收進選單，是現行社群平台的常見做法：
+ * 瀏覽時看到的是內容，不是每則貼文都掛著兩顆操作鈕。
+ * 破壞性動作藏一層，誤觸成本也低一些。
+ */
+const openMenuId = ref(null)
+
+/**
+ * 正在確認刪除的發文。
+ *
+ * 不用 window.confirm：原生對話框會凍結整個分頁、樣式不受控、
+ * 在行動裝置上的呈現各家不一。改用畫面內確認，動作與後果留在同一個卡片裡。
+ */
+const confirmingDeleteId = ref(null)
+
 const commentDrafts = reactive({})
 const commentErrors = reactive({})
 const commentSent = reactive({})
@@ -90,7 +107,16 @@ async function loadPosts() {
   }
 }
 
-onMounted(loadPosts)
+onMounted(() => {
+  loadPosts()
+  document.addEventListener('click', onDocumentClick)
+  document.addEventListener('keydown', onKeydown)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', onDocumentClick)
+  document.removeEventListener('keydown', onKeydown)
+})
 
 async function onCreate() {
   createError.value = ''
@@ -107,7 +133,40 @@ async function onCreate() {
   }
 }
 
+function toggleMenu(postId) {
+  openMenuId.value = openMenuId.value === postId ? null : postId
+  confirmingDeleteId.value = null
+}
+
+function closeOverlays() {
+  openMenuId.value = null
+  confirmingDeleteId.value = null
+}
+
+/** 點到卡片以外的地方就收起選單——使用者不必特地找關閉鈕。 */
+function onDocumentClick() {
+  openMenuId.value = null
+}
+
+/** Esc 收起選單與確認：鍵盤使用者不該被困在展開狀態裡。 */
+function onKeydown(event) {
+  if (event.key === 'Escape') {
+    closeOverlays()
+  }
+}
+
+function askDelete(post) {
+  openMenuId.value = null
+  confirmingDeleteId.value = post.postId
+}
+
+function cancelDelete() {
+  confirmingDeleteId.value = null
+}
+
 function startEdit(post) {
+  openMenuId.value = null
+  confirmingDeleteId.value = null
   editingId.value = post.postId
   editingContent.value = post.content
   editError.value = ''
@@ -139,12 +198,14 @@ async function onUpdate(post) {
   }
 }
 
+/**
+ * 執行刪除（已通過畫面內確認）。
+ *
+ * 確認這一步是體驗防呆，不是權限控制——後端刻意不檢查發文者身分（BG-4 裁決），
+ * 任何登入者都能刪除他人發文，誤觸的代價高，故在送出前多問一次。
+ */
 async function onDelete(post) {
-  // 確認對話框：後端刻意不檢查發文者身分（BG-4 裁決），任何登入者都能刪除他人發文，
-  // 誤觸的代價高，故在送出前多問一次。這是體驗防呆，不是權限控制。
-  if (!window.confirm('確定要刪除這篇發文嗎？該發文的留言會一併被刪除。')) {
-    return
-  }
+  confirmingDeleteId.value = null
 
   try {
     await deletePost(post.postId)
@@ -228,8 +289,37 @@ function formatTime(createdAt) {
     <TransitionGroup name="feed" tag="div" class="feed">
     <article v-for="post in posts" :key="post.postId" class="post">
       <header>
-        <span class="author">{{ post.userName }}</span>
-        <span class="time">{{ formatTime(post.createdAt) }}</span>
+        <div class="meta">
+          <span class="author">{{ post.userName }}</span>
+          <span class="time">{{ formatTime(post.createdAt) }}</span>
+        </div>
+
+        <!--
+          編輯與刪除收進「⋯」選單：瀏覽時看到的應該是內容，
+          不是每則貼文都掛著兩顆操作鈕。這是現行社群平台的常見做法。
+
+          選單出現在每一則貼文上，包含他人的——後端刻意不檢查發文者身分
+          （BG-4 裁決），畫面誠實反映後端能做到的事，不假裝有權限限制。
+        -->
+        <div class="menu-wrap" @click.stop>
+          <button
+            type="button"
+            class="menu-trigger"
+            :aria-expanded="openMenuId === post.postId"
+            aria-haspopup="menu"
+            aria-label="更多操作"
+            @click="toggleMenu(post.postId)"
+          >
+            ⋯
+          </button>
+
+          <div v-if="openMenuId === post.postId" class="menu" role="menu">
+            <button type="button" role="menuitem" @click="startEdit(post)">編輯</button>
+            <button type="button" role="menuitem" class="danger" @click="askDelete(post)">
+              刪除
+            </button>
+          </div>
+        </div>
       </header>
 
       <form
@@ -250,23 +340,38 @@ function formatTime(createdAt) {
 
       <template v-else>
         <p class="content">{{ post.content }}</p>
-        <div class="actions">
-          <button type="button" class="secondary" @click="startEdit(post)">編輯</button>
-          <button type="button" class="danger" @click="onDelete(post)">刪除</button>
+
+        <!--
+          刪除確認留在卡片內，而非跳原生 window.confirm。
+          原生對話框會凍結整個分頁、樣式不受控、行動裝置上各家呈現不一；
+          動作與後果應該留在同一個視覺脈絡裡。
+        -->
+        <div v-if="confirmingDeleteId === post.postId" class="confirm" role="alertdialog" @click.stop>
+          <p class="confirm-text">刪除這篇發文？該發文的留言會一併被刪除。</p>
+          <div class="confirm-actions">
+            <button type="button" class="secondary" @click="cancelDelete">取消</button>
+            <button type="button" class="solid-danger" @click="onDelete(post)">刪除</button>
+          </div>
         </div>
       </template>
 
-      <!-- 針對發文新增留言（題目 §4）。只有新增，沒有列出／編輯／刪除。 -->
+      <!--
+        針對發文新增留言（題目 §4）。只有新增，沒有列出／編輯／刪除。
+
+        送出鈕只在輸入框有內容時出現：空著的時候，一則貼文下面掛一顆按不了的鈕
+        是純粹的視覺噪音——社群動態是一路往下滑的，每則都多一顆灰鈕會很吵。
+      -->
       <form class="comment" novalidate @submit.prevent="onComment(post)">
         <input
           v-model="commentDrafts[post.postId]"
           maxlength="500"
-          placeholder="新增留言…"
+          placeholder="留個言…"
           aria-label="留言內容"
         />
         <button
+          v-if="(commentDrafts[post.postId] ?? '').trim()"
           type="submit"
-          :disabled="commenting[post.postId] || !(commentDrafts[post.postId] ?? '').trim()"
+          :disabled="commenting[post.postId]"
         >
           {{ commenting[post.postId] ? '送出中…' : '留言' }}
         </button>
@@ -352,10 +457,120 @@ h1 {
 
 .post > header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 0.6rem;
+}
+
+/* 作者與時間同一行、基線對齊 */
+.meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+/* ── 「⋯」選單 ─────────────────────────────────── */
+.menu-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.menu-trigger {
+  padding: 0 0.5rem;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  font-size: 1.15rem;
+  line-height: 1.2;
+  color: var(--stone-400);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.menu-trigger:hover {
+  background: var(--jade-100);
+  color: var(--jade-950);
+}
+
+.menu-trigger[aria-expanded="true"] {
+  background: var(--jade-100);
+  color: var(--jade-950);
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 7rem;
+  padding: 0.25rem;
+  background: var(--mist-0);
+  border: 1px solid var(--stone-200);
+  border-radius: var(--r-md);
+  box-shadow: 0 6px 20px rgba(5, 35, 29, 0.1);
+}
+
+.menu button {
+  padding: 0.45rem 0.7rem;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-align: left;
+  color: var(--jade-950);
+}
+
+.menu button:hover {
+  background: var(--jade-100);
+}
+
+.menu button.danger {
+  color: var(--clay-600);
+  border: 0;
+}
+
+.menu button.danger:hover {
+  background: var(--clay-50);
+}
+
+/* ── 刪除確認 ───────────────────────────────────── */
+.confirm {
+  margin-bottom: 0.5rem;
+  padding: 0.9rem 1rem;
+  background: var(--clay-50);
+  border-radius: var(--r-md);
+}
+
+.confirm-text {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+  color: var(--clay-600);
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.confirm-actions button {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+}
+
+/* 確認裡的刪除鈕用實心：這是使用者最後一次確認，不該和「取消」看起來一樣輕 */
+.solid-danger {
+  background: var(--clay-600);
+  color: var(--mist-0);
+  border-color: var(--clay-600);
+}
+
+.solid-danger:hover:not(:disabled) {
+  background: #8d2b22;
+  border-color: #8d2b22;
 }
 
 .author {
@@ -415,6 +630,17 @@ h1 {
   flex-shrink: 0;
   padding: 0.55rem 1.1rem;
   font-size: 0.85rem;
+}
+
+/* 留言列在沒有內容時只有一個輸入框，讓它在視覺上退到背景 */
+.comment input {
+  background: var(--mist-50);
+  border-color: transparent;
+}
+
+.comment input:focus-visible {
+  background: var(--mist-0);
+  border-color: var(--jade-500);
 }
 
 /* 留言送出後的回饋緊接在表單下方 */

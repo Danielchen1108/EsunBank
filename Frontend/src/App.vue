@@ -134,8 +134,14 @@ header {
   color: var(--stone-400);
 }
 
+/*
+ * baseline 而非預設的 stretch：導覽列是一排文字，該對齊的是文字基線。
+ * stretch 會讓每個項目撐成同高的盒子，內距不同的項目（連結有 padding、
+ * 使用者名稱沒有）文字就會落在不同高度——差 2px 肉眼就看得出來。
+ */
 nav {
   display: flex;
+  align-items: baseline;
   gap: 1.25rem;
 }
 
