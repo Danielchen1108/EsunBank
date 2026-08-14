@@ -82,9 +82,9 @@ cd Backend && ./mvnw spring-boot:run
 cd Frontend && npm install && npm run dev
 ```
 
-開啟 **http://localhost:5174** 即可操作。
+開啟 **http://localhost:5173** 即可操作。
 
-> 前端刻意不用 Vite 預設的 5173 埠，原因寫在 `Frontend/vite.config.js`。
+> 若該埠已被佔用，Vite 會自動改用下一個可用埠，以終端機印出的網址為準。
 
 ---
 

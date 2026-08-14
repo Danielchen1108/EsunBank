@@ -14,11 +14,9 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [vue()],
   server: {
-    // 刻意不用 Vite 預設的 5173：開發機上另一個專案（POS）在 localhost:5173
-    // 註冊過 Service Worker，會攔截請求並回舊的快取內容。
-    // Service Worker 的作用域綁定 origin（含埠號），換埠即可避開。
-    port: 5174,
-    strictPort: true,
+    // 沿用 Vite 預設埠。不設 strictPort：埠被佔用時讓 Vite 自動遞增，
+    // 比直接啟動失敗友善——啟動後看終端機印出的實際網址即可。
+    port: 5173,
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
