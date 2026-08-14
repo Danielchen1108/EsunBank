@@ -1,7 +1,14 @@
 <script setup>
 import { onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { createComment, createPost, deletePost, listPosts, updatePost } from '../api/client.js'
+import {
+  createComment,
+  createPost,
+  deletePost,
+  listPosts,
+  logout,
+  updatePost,
+} from '../api/client.js'
 
 /**
  * 發文與留言畫面（發文與留言）。
@@ -88,16 +95,25 @@ const COMMENT_PREVIEW = 3
 const expandedComments = reactive({})
 
 /**
- * 把 API 錯誤轉成可讀訊息；401 一律導向登入頁。
+ * 把 API 錯誤轉成可讀訊息；401 先清掉本機憑證，再導向登入頁。
  *
- * 未登入的處理只做導向：後端對 /api/posts 一律要求登入（deny-by-default），
- * 授權判定在後端。前端不設路由守衛，也不把「看不到畫面」當成安全機制——
- * 那只是體驗優化，擋不住直接呼叫 API 的人。
+ * 授權判定在後端（deny-by-default），前端這裡做的只是「被拒絕之後怎麼收拾」，
+ * 不是安全機制——擋不住直接呼叫 API 的人。
+ *
+ * **先 logout() 再導向，順序不能顛倒。** 路由守衛判斷「是否已登入」的依據是
+ * localStorage 裡有沒有憑證，它無從得知那份憑證後端還認不認。憑證失效時若只導向、
+ * 不清除，守衛會看到憑證還在、認定使用者已登入，於是把這次前往 /login 的導向
+ * 當成「已登入還想去登入頁」而彈回 /posts——使用者就卡在一個載不出內容、
+ * 導覽列卻仍顯示著自己名字的畫面，只能自己按登出才能脫身。
+ *
+ * 這不是理論情境：未設定 APP_JWT_SECRET 時後端每次啟動都會換一把隨機金鑰
+ * （這正是預設行為），先前簽發的憑證全部失效，重啟後只要重新整理就會踩到。
  */
 function toMessage(error) {
   if (error.status === 401) {
+    logout()
     router.push('/login')
-    return '請先登入後再操作。'
+    return '登入狀態已失效，請重新登入。'
   }
 
   // 400 由後端 Bean Validation 產生，errors 為逐欄訊息（此處各表單都只有 content 一欄）
