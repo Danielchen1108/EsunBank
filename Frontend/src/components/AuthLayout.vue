@@ -46,7 +46,6 @@ defineProps({
 
       <div class="brand-text">
         <p class="brand-name">社群媒體系統</p>
-        <p class="brand-sub mono">E.SUN take-home</p>
         <p class="brand-note">以手機號碼註冊，登入後即可發文與留言。</p>
       </div>
     </aside>
@@ -102,12 +101,6 @@ defineProps({
   color: var(--jade-950);
 }
 
-.brand-sub {
-  margin: 0.15rem 0 0;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
 
 .brand-note {
   margin: 1.25rem 0 0;

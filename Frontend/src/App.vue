@@ -65,10 +65,7 @@ function onLogout() {
     </svg>
 
     <div class="bar">
-      <RouterLink to="/posts" class="brand">
-        社群媒體系統
-        <span class="brand-sub mono">E.SUN take-home</span>
-      </RouterLink>
+      <RouterLink to="/posts" class="brand">社群媒體系統</RouterLink>
 
       <nav>
         <template v-if="authState.loggedIn">
@@ -117,9 +114,6 @@ header {
 }
 
 .brand {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
   font-weight: 700;
   font-size: 1.05rem;
   letter-spacing: -0.02em;
@@ -127,12 +121,6 @@ header {
   text-decoration: none;
 }
 
-.brand-sub {
-  font-size: 0.68rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--stone-400);
-}
 
 /*
  * baseline 而非預設的 stretch：導覽列是一排文字，該對齊的是文字基線。

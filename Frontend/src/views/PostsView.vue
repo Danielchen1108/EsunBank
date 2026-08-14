@@ -381,7 +381,7 @@ function formatTime(createdAt) {
         {{ commentErrors[post.postId] }}
       </small>
       <small v-else-if="commentSent[post.postId]" class="success">
-        留言已送出。（題目未要求列出留言，故此處不顯示留言內容）
+        留言已送出。
       </small>
     </article>
     </TransitionGroup>
