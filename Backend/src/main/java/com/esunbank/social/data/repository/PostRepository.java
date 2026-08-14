@@ -15,11 +15,11 @@ import org.springframework.stereotype.Repository;
 /**
  * 發文資料存取（資料層）。
  *
- * <p>依題目 §6「透過 Stored Procedure 存取資料庫」，本類別不撰寫任何 SQL 陳述式，
+ * <p>依需求 §6「透過 Stored Procedure 存取資料庫」，本類別不撰寫任何 SQL 陳述式，
  * 僅以 {@link CallableStatement} 呼叫 {@code DB/02_DDL_stored_procedures.sql}
  * 中定義的 Stored Procedure。
  *
- * <p><b>防 SQL Injection（題目 §6）：</b>所有參數以 {@code setLong} / {@code setString} 綁定，
+ * <p><b>防 SQL Injection（需求 §6）：</b>所有參數以 {@code setLong} / {@code setString} 綁定，
  * 不進行字串拼接。搭配 SP 內部的靜態語句（不使用 {@code PREPARE} + {@code CONCAT}），
  * 兩端共同構成防護——僅使用 SP 而 SP 內拼接動態 SQL 並不免疫注入。
  *
@@ -39,7 +39,7 @@ public class PostRepository {
     /**
      * 呼叫 {@code sp_post_create} 新增發文。
      *
-     * @param userId 發文者，取自登入憑證而非請求內容（題目 §2）
+     * @param userId 發文者，取自登入憑證而非請求內容（需求 §2）
      * @return 新增的 post_id
      */
     public Long create(Long userId, String content) {
@@ -49,8 +49,8 @@ public class PostRepository {
                             connection.prepareCall("{call sp_post_create(?, ?, ?)}");
                     statement.setLong(1, userId);
                     statement.setString(2, content);
-                    // image：欄位保留於 schema（題目第 2 頁列有 Image，標示為非必要欄位），
-                    // 但題目功能清單無上傳功能，故 API 不開放填寫（SCOPE-BOUNDARY.md R-3）。
+                    // image：欄位保留於 schema（需求規格列有 Image，標示為非必要欄位），
+                    // 但需求功能清單無上傳功能，故 API 不開放填寫（SCOPE-BOUNDARY.md R-3）。
                     // SP 的參數維持不變（DB 腳本不因應用層裁決而改），此處固定綁 NULL。
                     statement.setNull(3, java.sql.Types.VARCHAR);
                     return statement;
@@ -71,8 +71,8 @@ public class PostRepository {
      *
      * <p>SP 內已帶 {@code is_deleted = FALSE}（ADR-004）。
      *
-     * <p>結果順序未定義：{@code sp_post_list} 刻意不寫 ORDER BY——題目未定義排序規則
-     * （`SCOPE-BOUNDARY.md` 列為 Out of Scope）。本層不自行補排序，避免實作出題目沒要求的行為。
+     * <p>結果順序未定義：{@code sp_post_list} 刻意不寫 ORDER BY——需求未定義排序規則
+     * （`SCOPE-BOUNDARY.md` 列為 Out of Scope）。本層不自行補排序，避免實作出需求沒要求的行為。
      */
     public List<PostRow> findAll() {
         return jdbcTemplate.execute(
@@ -150,7 +150,7 @@ public class PostRepository {
     /**
      * 呼叫 {@code sp_post_delete} 軟刪除發文，並連動軟刪除其留言。
      *
-     * <p><b>題目 §6「需同時異動多個資料表時，請實作 Transaction」的落地點。</b>
+     * <p><b>需求 §6「需同時異動多個資料表時，請實作 Transaction」的落地點。</b>
      * SP 內以顯式 {@code START TRANSACTION} / {@code COMMIT} 包覆 {@code post} 與
      * {@code comment} 兩次 UPDATE，任一失敗即 {@code ROLLBACK} 並將錯誤拋回本層，
      * 避免出現「發文已標記刪除但留言仍為未刪除」的資料錯亂（ADR-004）。
@@ -191,7 +191,7 @@ public class PostRepository {
      * 資料列 → 領域模型（資料層職責，見 {@code data/package-info.java}）。
      *
      * <p>SP 的結果集仍含 {@code image} 欄，此處刻意不映射——欄位保留於 schema
-     * （題目第 2 頁），但無上傳功能故 API 不開放（SCOPE-BOUNDARY.md R-3），
+     * （需求規格），但無上傳功能故 API 不開放（SCOPE-BOUNDARY.md R-3），
      * 帶到上層只會是一個永遠為 null 的欄位。
      */
     private PostRow mapRow(ResultSet resultSet) throws SQLException {

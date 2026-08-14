@@ -25,7 +25,7 @@ import com.esunbank.social.data.repository.UserRepository;
  * 註冊業務邏輯（F002 AC-3）。
  *
  * <p>本測試的核心是證明：**明碼密碼不會流入資料層**。
- * 題目第 2 頁明文要求「密碼請加鹽(salt)並經雜湊(Hash)後儲存，避免明碼外洩」。
+ * 需求規格明文要求「密碼請加鹽(salt)並經雜湊(Hash)後儲存，避免明碼外洩」。
  */
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -41,7 +41,7 @@ class UserServiceTest {
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
     /**
-     * 註冊流程不使用 {@link JwtTokenService}（題目未要求註冊後自動登入），
+     * 註冊流程不使用 {@link JwtTokenService}（需求未要求註冊後自動登入），
      * 但它是 {@link UserService} 的建構子相依，故仍須提供一個實例。
      */
     private UserService service() {

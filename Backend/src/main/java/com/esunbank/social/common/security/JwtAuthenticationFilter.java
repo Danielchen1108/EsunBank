@@ -17,8 +17,8 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * JWT 驗證過濾器（共用層）。
  *
- * <p>對應題目 §2「確保只有登入的使用者可以發文或留言」。
- * 攔截點放在過濾鏈而非各控制器，是題目 §5「共用層」的落地——
+ * <p>對應需求 §2「確保只有登入的使用者可以發文或留言」。
+ * 攔截點放在過濾鏈而非各控制器，是需求 §5「共用層」的落地——
  * F004 發文與 F005 留言不必各自實作身分檢查。
  *
  * <p><b>驗證失敗不直接回 401：</b>本過濾器只負責「若憑證有效就標記身分」，
@@ -81,7 +81,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * <p><b>principal 必須是 {@link AuthenticatedUser}</b>——這是 F003／F004／F005
      * 的共用契約，各功能以 {@code @AuthenticationPrincipal AuthenticatedUser} 取得目前使用者。
      *
-     * <p>權限清單為空：題目未定義角色或權限分級，僅區分「已登入／未登入」。
+     * <p>權限清單為空：需求未定義角色或權限分級，僅區分「已登入／未登入」。
      * 使用三參數建構子，Spring Security 會將此 token 視為已通過驗證。
      */
     private void authenticate(AuthenticatedUser user, HttpServletRequest request) {

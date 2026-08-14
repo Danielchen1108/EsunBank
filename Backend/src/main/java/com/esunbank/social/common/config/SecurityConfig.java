@@ -22,7 +22,7 @@ import com.esunbank.social.common.security.JwtTokenService;
  *
  * <p>對應決策 ADR-003：登入驗證採 Spring Security + JWT。
  *
- * <p>本類別是題目 §2「確保只有登入的使用者可以發文或留言」的落地點：
+ * <p>本類別是需求 §2「確保只有登入的使用者可以發文或留言」的落地點：
  * 授權規則集中於此，各控制器不需自行檢查身分。
  */
 @Configuration
@@ -31,7 +31,7 @@ public class SecurityConfig {
     /**
      * 密碼編碼器。
      *
-     * <p>對應題目第 2 頁 User 表：「密碼請加鹽(salt)並經雜湊(Hash)後儲存，避免明碼外洩」。
+     * <p>對應需求規格 User 表：「密碼請加鹽(salt)並經雜湊(Hash)後儲存，避免明碼外洩」。
      *
      * <p>{@link BCryptPasswordEncoder} 每次編碼會自動產生隨機 salt 並內嵌於輸出中，
      * 因此無須另建 salt 欄位。輸出固定 60 字元，對應資料表 {@code user.password}
@@ -64,20 +64,20 @@ public class SecurityConfig {
      *
      * <p><b>驗證方式（F003）：</b>移除骨架階段的 HTTP Basic，改以 JWT 過濾器驗證。
      * HTTP Basic 每次請求都要帶明碼帳密，且會觸發瀏覽器原生登入視窗，
-     * 不適用於題目 §6 指定的 Vue.js 前後端分離架構。
+     * 不適用於需求 §6 指定的 Vue.js 前後端分離架構。
      *
      * <p><b>白名單（permitAll）：</b>只有「還沒有身分的人也必須能用」的兩個端點。
      * <ul>
-     *   <li>{@code POST /api/auth/register} — 使用者此時尚無帳號（題目 §1）</li>
+     *   <li>{@code POST /api/auth/register} — 使用者此時尚無帳號（需求 §1）</li>
      *   <li>{@code POST /api/auth/login} — 登入本身若需先登入即成死結</li>
      * </ul>
      *
      * <p><b>其餘一律要求登入（deny by default）：</b>含 {@code /api/posts/**}
-     * 與 {@code /api/posts/*}{@code /comments}，即題目 §2 明文要求保護的發文與留言。
+     * 與 {@code /api/posts/*}{@code /comments}，即需求 §2 明文要求保護的發文與留言。
      * 採「預設拒絕」而非逐條列舉保護對象——日後新增端點時，遺漏設定的後果是被擋下
      * 而非被公開，失誤方向較安全。
      *
-     * <p>CSRF 停用的理由：本服務為無狀態 RESTful API（題目 §6），
+     * <p>CSRF 停用的理由：本服務為無狀態 RESTful API（需求 §6），
      * 驗證憑證以 Authorization 標頭傳遞而非 Cookie，不存在 CSRF 的攻擊前提。
      *
      * <p>Session 設為 {@code STATELESS}：伺服器不保存登入狀態，

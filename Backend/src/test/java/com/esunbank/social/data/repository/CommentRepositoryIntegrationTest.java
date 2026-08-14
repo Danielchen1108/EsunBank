@@ -20,7 +20,7 @@ import com.esunbank.social.common.exception.CommentTargetPostNotFoundException;
  * <ul>
  *   <li>{@code sp_comment_create} 的 {@code SIGNAL SQLSTATE '45000'}
  *       確實被轉譯為 {@link CommentTargetPostNotFoundException}</li>
- *   <li>注入字串經 {@code CallableStatement} 綁定後原樣存為文字（題目 §6）</li>
+ *   <li>注入字串經 {@code CallableStatement} 綁定後原樣存為文字（需求 §6）</li>
  *   <li>{@code sp_comment_list_visible} 的兩層 {@code is_deleted} 過濾與排序
  *       ——過濾與排序都寫在 SP 內，mock 掉資料層就等於把要驗的東西一起 mock 掉了</li>
  * </ul>
@@ -106,7 +106,7 @@ class CommentRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("SQL Injection 字串原樣存為文字，comment 表完好（題目 §6）")
+    @DisplayName("SQL Injection 字串原樣存為文字，comment 表完好（需求 §6）")
     void storesInjectionStringAsPlainText() {
         String injection = "'); DROP TABLE `comment`; --";
         Long before = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM `comment`", Long.class);

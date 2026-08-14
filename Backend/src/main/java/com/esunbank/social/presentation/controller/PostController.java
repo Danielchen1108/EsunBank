@@ -29,9 +29,9 @@ import jakarta.validation.Valid;
 /**
  * 發文端點（展示層）。
  *
- * <p>對應題目 §3「新增發文／列出所有發文／編輯或刪除發文」。
+ * <p>對應需求 §3「新增發文／列出所有發文／編輯或刪除發文」。
  *
- * <p><b>RESTful 設計（題目 §6）：</b>以 {@code /api/posts} 為資源集合，
+ * <p><b>RESTful 設計（需求 §6）：</b>以 {@code /api/posts} 為資源集合，
  * 動作由 HTTP 方法表達（POST 新增、GET 讀取、PUT 取代、DELETE 刪除），
  * 路徑中不出現動詞。
  *
@@ -40,7 +40,7 @@ import jakarta.validation.Valid;
  * {@link AuthenticatedUser} principal。本控制器不自行檢查憑證——那是共用層的職責。
  *
  * <p><b>編輯與刪除刻意不做發文者身分檢查（{@code F004-REQ.md} § BG-4 裁決）：</b>
- * 題目 §2 原文「確保只有登入的使用者可以<b>發文或留言</b>」，字面上未涵蓋編輯與刪除。
+ * 需求 §2 原文「確保只有登入的使用者可以<b>發文或留言</b>」，字面上未涵蓋編輯與刪除。
  * owner 依「沒寫就不用」明示裁決不實作，並接受「任何登入使用者可編輯或刪除他人發文」的風險。
  * 因此 {@link #update} 與 {@link #delete} 不取用目前登入者——<b>這是刻意決策，不是遺漏</b>。
  */
@@ -60,7 +60,7 @@ public class PostController {
      * <p>回 201 Created 而非 200——建立了新資源。
      *
      * <p>發文者取自 {@code currentUser} 而非請求內容：若由請求指定 userId，
-     * 使用者就能冒用他人身分發文，題目 §2 的驗證要求形同虛設。
+     * 使用者就能冒用他人身分發文，需求 §2 的驗證要求形同虛設。
      */
     @PostMapping
     public ResponseEntity<CreatePostResponse> create(
@@ -90,7 +90,7 @@ public class PostController {
      * 沒有留言的發文回傳空陣列。
      *
      * <p>留言依時間排序（順序即對話），但<b>發文本身不排序、不分頁</b>——
-     * 題目未定義發文的排序規則，依 `SCOPE-BOUNDARY.md` 判定原則 R-3 不實作。
+     * 需求未定義發文的排序規則，依 `SCOPE-BOUNDARY.md` 判定原則 R-3 不實作。
      */
     @GetMapping
     public ResponseEntity<List<PostResponse>> list() {
@@ -124,7 +124,7 @@ public class PostController {
      * 刪除發文（AC-5、AC-11）。
      *
      * <p>軟刪除，並於同一交易內連動軟刪除其留言（ADR-004）——
-     * 題目 §6「需同時異動多個資料表時，請實作 Transaction」的落地點。
+     * 需求 §6「需同時異動多個資料表時，請實作 Transaction」的落地點。
      *
      * <p>回 204 No Content：刪除成功且無內容可回。
      *

@@ -6,7 +6,7 @@ import AuthLayout from '../components/AuthLayout.vue'
 import PasswordField from '../components/PasswordField.vue'
 
 /**
- * 註冊畫面（題目 §1）。
+ * 註冊畫面（需求 §1）。
  *
  * 前端驗證僅為體驗優化，後端仍會獨立驗證（F002 AC-8）；
  * 資料庫另有 CHECK 約束（F001 AC-10）。三層各自把關。
@@ -26,7 +26,7 @@ const generalError = ref('')
 const successUserId = ref(null)
 const submitting = ref(false)
 
-// 僅檢查長度 10 碼——與後端同規則。不驗開頭數字，題目未要求。
+// 僅檢查長度 10 碼——與後端同規則。不驗開頭數字，需求未要求。
 const phoneLooksValid = computed(() => form.phone.length === 10)
 
 async function onSubmit() {
@@ -39,7 +39,7 @@ async function onSubmit() {
     const result = await register({ ...form })
     successUserId.value = result.userId
 
-    // 註冊不自動登入（題目未要求，F002-REQ.md Non-goals），
+    // 註冊不自動登入（需求未要求，F002-REQ.md Non-goals），
     // 但也不該把人留在原地自己找路。帶手機號碼過去，登入頁不必重打。
     setTimeout(() => {
       router.replace({ name: 'login', query: { phone: form.phone } })

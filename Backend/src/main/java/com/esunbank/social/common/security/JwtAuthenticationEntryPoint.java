@@ -14,14 +14,14 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * 未登入時的回應（共用層）。
  *
- * <p>對應題目 §2：未登入者存取發文或留言端點時的回應內容。
+ * <p>對應需求 §2：未登入者存取發文或留言端點時的回應內容。
  *
  * <p><b>為何需要這個類別：</b>Spring Security 在未設定進入點時，預設會導向登入頁
- * 或回 403。本服務是 RESTful API（題目 §6），應回 JSON 而非 HTML，
+ * 或回 403。本服務是 RESTful API（需求 §6），應回 JSON 而非 HTML，
  * 且「未提供憑證」語意上是 401 而非 403。
  *
  * <p><b>401 而非 403 的判定（RFC 9110）：</b>401 表示「缺少或無效的驗證憑證」，
- * 403 表示「身分已知但無權限」。本案未登入即屬前者。且題目未定義權限分級，
+ * 403 表示「身分已知但無權限」。本案未登入即屬前者。且需求未定義權限分級，
  * 已登入者一律有相同權限，故 403 在本系統中無適用情境。
  */
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {

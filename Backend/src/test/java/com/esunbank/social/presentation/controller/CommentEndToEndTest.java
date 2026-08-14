@@ -94,7 +94,7 @@ class CommentEndToEndTest {
         var row = jdbcTemplate.queryForMap(
                 "SELECT user_id, post_id, content FROM `comment` WHERE comment_id = ?", commentId);
 
-        // 作者取自 principal 而非請求主體（題目 §2）
+        // 作者取自 principal 而非請求主體（需求 §2）
         assertThat(((Number) row.get("user_id")).longValue()).isEqualTo(CURRENT_USER.userId());
         assertThat(((Number) row.get("post_id")).longValue()).isEqualTo(1L);
         assertThat(row.get("content")).isEqualTo(content);

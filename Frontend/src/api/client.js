@@ -1,8 +1,8 @@
 /**
  * 後端 API 用戶端。
  *
- * 以 fetch 實作，不額外引入 HTTP 函式庫——題目未要求，依 SCOPE-BOUNDARY.md
- * 的判定原則 R-3（題目未提及則不做）。
+ * 以 fetch 實作，不額外引入 HTTP 函式庫——需求未要求，依 SCOPE-BOUNDARY.md
+ * 的判定原則 R-3（需求未提及則不做）。
  *
  * 路徑一律以 /api 開頭，由 vite.config.js 的 proxy 轉發至 Application Server。
  */
@@ -72,7 +72,7 @@ export function currentUserName() {
 /**
  * 登出。
  *
- * **題目未要求登出功能**（§1–§4 只有註冊、登入、發文、留言），
+ * **需求未要求登出功能**（§1–§4 只有註冊、登入、發文、留言），
  * 為了讓登入流程有出口而追加——有閘門卻沒有出口，使用者只能靠清除瀏覽器資料脫身。
  * 記於 SCOPE-BOUNDARY.md 的「Owner 追加」。
  *
@@ -89,7 +89,7 @@ export function logout() {
 /**
  * 發送請求並解析 JSON 回應。
  *
- * 已登入時自動帶上 `Authorization: Bearer <token>`——題目 §2 要求
+ * 已登入時自動帶上 `Authorization: Bearer <token>`——需求 §2 要求
  * 只有登入的使用者可以發文或留言，後端據此標頭判斷身分。
  * 未登入時不帶，讓註冊與登入等公開端點照常運作。
  *
@@ -120,7 +120,7 @@ export async function request(path, options = {}) {
 }
 
 /**
- * 註冊帳號（題目 §1）。
+ * 註冊帳號（需求 §1）。
  *
  * @param {{phone: string, userName: string, email: string, password: string, biography?: string}} payload
  * @returns {Promise<{userId: number}>}
@@ -133,11 +133,11 @@ export function register(payload) {
 }
 
 /**
- * 登入（題目 §2）。
+ * 登入（需求 §2）。
  *
  * 成功後把憑證存起來，後續請求由 request() 自動帶上。
  *
- * 刻意沒有對應的 logout()：題目未提及登出功能，依 SCOPE-BOUNDARY.md
+ * 刻意沒有對應的 logout()：需求未提及登出功能，依 SCOPE-BOUNDARY.md
  * 的判定原則 R-3 不實作。
  *
  * @param {{phone: string, password: string}} payload
@@ -160,7 +160,7 @@ export async function login(payload) {
 }
 
 /**
- * 列出所有發文（題目 §3）。
+ * 列出所有發文（需求 §3）。
  *
  * 排序由 sp_post_list 決定：由新到舊（created_at DESC，同秒時以 post_id DESC 決勝）。
  * 前端照回傳順序顯示、不重排——排序規則只寫在 SQL 一個地方。
@@ -182,12 +182,12 @@ export function listPosts() {
 }
 
 /**
- * 新增發文（題目 §3）。
+ * 新增發文（需求 §3）。
  *
  * 只送 content：發文者由後端從登入憑證取得，不由前端指定——
- * 否則任何人都能宣稱自己是別人（題目 §2）。
+ * 否則任何人都能宣稱自己是別人（需求 §2）。
  *
- * 沒有 image：post.image 欄位保留於資料庫（題目第 2 頁），但題目沒有上傳功能，
+ * 沒有 image：post.image 欄位保留於資料庫（需求規格），但需求沒有上傳功能，
  * API 不開放填寫（F004-API.md § image 不在 API 契約內）。
  *
  * @param {{content: string}} payload
@@ -201,7 +201,7 @@ export function createPost(payload) {
 }
 
 /**
- * 編輯發文（題目 §3）。
+ * 編輯發文（需求 §3）。
  *
  * 後端刻意不檢查操作者是否為發文者（F004-API.md § BG-4 裁決），
  * 故任何登入者都能編輯任何一篇發文。前端不另外擋——授權判定在後端，
@@ -220,10 +220,10 @@ export function updatePost(postId, payload) {
 }
 
 /**
- * 刪除發文（題目 §3）。
+ * 刪除發文（需求 §3）。
  *
  * 後端為軟刪除，且於同一交易內連動標記該發文的留言（ADR-004）——
- * 這是題目 §6 Transaction 要求的落地點。前端只需知道成功即代表兩者都已標記。
+ * 這是需求 §6 Transaction 要求的落地點。前端只需知道成功即代表兩者都已標記。
  *
  * 成功時後端回 204 No Content，沒有回應內容，故 request() 解析後為 null。
  *
@@ -237,14 +237,14 @@ export function deletePost(postId) {
 }
 
 /**
- * 針對發文新增留言（題目 §4）。
+ * 針對發文新增留言（需求 §4）。
  *
  * postId 放在路徑而非請求內容：留言依附於發文，歸屬關係直接呈現在 URI 上
- * （RESTful，題目 §6）。留言者同樣由後端從登入憑證取得。
+ * （RESTful，需求 §6）。留言者同樣由後端從登入憑證取得。
  *
  * 沒有 listComments：留言的讀取不走獨立端點，由 listPosts() 隨發文一併帶回。
  *
- * 刻意沒有 updateComment / deleteComment：題目 §4 只寫「新增留言」，
+ * 刻意沒有 updateComment / deleteComment：需求 §4 只寫「新增留言」，
  * 依 SCOPE-BOUNDARY.md 判定原則 R-3 不實作，後端也沒有對應端點。
  *
  * @param {number} postId 目標發文，必須存在且未被刪除，否則後端回 404

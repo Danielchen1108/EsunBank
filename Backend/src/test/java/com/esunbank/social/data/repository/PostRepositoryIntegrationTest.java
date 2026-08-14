@@ -34,7 +34,7 @@ import com.esunbank.social.data.repository.PostRepository.PostRow;
  *
  * <p><b>驗證用的直接 SQL：</b>斷言 {@code is_deleted} 狀態時刻意繞過 Stored Procedure 直接查詢。
  * 若改用受測的 SP 來驗證 SP 自己的效果，測試與實作會一起錯而測不出來。
- * 此處的 SQL 僅存在於測試，不違反「資料層不得寫 SQL」的約束（題目 §6）。
+ * 此處的 SQL 僅存在於測試，不違反「資料層不得寫 SQL」的約束（需求 §6）。
  */
 @SpringBootTest(
         properties = {
@@ -194,7 +194,7 @@ class PostRepositoryIntegrationTest {
         int affected = postRepository.softDelete(postId);
 
         assertThat(affected).isEqualTo(1);
-        // 題目 §6：跨表異動須為原子操作——post 與 comment 必須同時標記
+        // 需求 §6：跨表異動須為原子操作——post 與 comment 必須同時標記
         assertThat(postDeletedFlag(postId)).isEqualTo(1);
         assertThat(commentDeletedFlags(postId)).containsExactly(1);
         // ADR-004 最常見的缺陷：讀取漏帶過濾條件，已刪除的內容重新出現
@@ -217,7 +217,7 @@ class PostRepositoryIntegrationTest {
         Long postId = insertPostWithComment("驗證交易回滾");
 
         // 以 trigger 讓 comment 的 UPDATE 必定失敗。sp_post_delete 先更新 post 再更新 comment，
-        // 若沒有交易，post 會停在 is_deleted = 1 而留言未動——正是題目 §6 所述的資料錯亂。
+        // 若沒有交易，post 會停在 is_deleted = 1 而留言未動——正是需求 §6 所述的資料錯亂。
         jdbcTemplate.execute("""
                 CREATE TRIGGER trg_f004_fail_comment_update
                 BEFORE UPDATE ON `comment`

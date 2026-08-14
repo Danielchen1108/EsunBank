@@ -70,8 +70,8 @@ class PostRequestValidationTest {
     @Test
     @DisplayName("新增與編輯發文的請求皆不含 image——欄位保留於 schema，但 API 不開放填寫")
     void requestsDoNotExposeImage() {
-        // 題目第 2 頁列有 Post.Image（標「非必要欄位」），故 DB schema 保留該欄；
-        // 但題目功能清單 §1–§4 沒有上傳功能，依 SCOPE-BOUNDARY.md R-3「沒寫就不用」，
+        // 需求規格列有 Post.Image（標「非必要欄位」），故 DB schema 保留該欄；
+        // 但需求功能清單 §1–§4 沒有上傳功能，依 SCOPE-BOUNDARY.md R-3「沒寫就不用」，
         // API 不開放填寫。此處把該裁決固化為可執行的規格，避免日後被當成漏掉的欄位補回來。
         assertThat(CreatePostRequest.class.getRecordComponents())
                 .extracting(RecordComponent::getName)

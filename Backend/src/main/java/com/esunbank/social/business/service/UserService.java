@@ -13,7 +13,7 @@ import com.esunbank.social.data.repository.UserRepository;
 /**
  * 使用者業務邏輯（業務層）。
  *
- * <p>對應題目 §1 註冊功能與 §2 登入驗證功能。兩者共用同一個服務：
+ * <p>對應需求 §1 註冊功能與 §2 登入驗證功能。兩者共用同一個服務：
  * 都以手機號碼為帳號、都圍繞密碼雜湊，拆開反而讓「加密與比對必須成對」這件事變得不明顯。
  */
 @Service
@@ -34,13 +34,13 @@ public class UserService {
     /**
      * 註冊使用者。
      *
-     * <p><b>密碼處理（題目第 2 頁）：</b>「密碼請加鹽(salt)並經雜湊(Hash)後儲存，
+     * <p><b>密碼處理（需求規格）：</b>「密碼請加鹽(salt)並經雜湊(Hash)後儲存，
      * 避免明碼外洩」。{@link PasswordEncoder} 的實作為 BCrypt，每次編碼自動產生
      * 隨機 salt 並內嵌於輸出，因此無須另建 salt 欄位。
      * <b>明碼在此結束，不會流入資料層。</b>
      *
      * <p>未使用 {@code @Transactional}：僅異動 {@code user} 單表，
-     * 未觸發題目 §6「同時異動多個資料表」的條件（見 {@code F002-REQ.md} OQ-3）。
+     * 未觸發需求 §6「同時異動多個資料表」的條件（見 {@code F002-REQ.md} OQ-3）。
      */
     public Long register(RegisterCommand command) {
         String passwordHash = passwordEncoder.encode(command.password());
@@ -60,7 +60,7 @@ public class UserService {
     }
 
     /**
-     * 登入（題目 §2）。
+     * 登入（需求 §2）。
      *
      * <p><b>密碼比對方式（AC-2）：</b>資料庫存的是 BCrypt 雜湊值，為單向函式，
      * 無法還原成明碼。故驗證是「把使用者輸入的明碼以同一組 salt 重新雜湊後比較」——
@@ -71,10 +71,10 @@ public class UserService {
      * {@link InvalidCredentialsException}，使登入端點無法被用來探測帳號是否存在
      * （{@code F003-REQ.md} OQ-3）。
      *
-     * <p>驗證通過後簽發 JWT。<b>不設有效期</b>——題目未提及，owner 裁決不實作
+     * <p>驗證通過後簽發 JWT。<b>不設有效期</b>——需求未提及，owner 裁決不實作
      * （ADR-003、{@code SCOPE-BOUNDARY.md}）。同理不提供更新與登出。
      *
-     * <p>未使用 {@code @Transactional}：純唯讀單表查詢，未觸發題目 §6
+     * <p>未使用 {@code @Transactional}：純唯讀單表查詢，未觸發需求 §6
      * 「同時異動多個資料表」的條件。
      */
     public LoginResult login(LoginCommand command) {

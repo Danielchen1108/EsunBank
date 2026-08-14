@@ -61,7 +61,7 @@ class RegisterRequestValidationTest {
     }
 
     @Test
-    @DisplayName("不驗證開頭數字——題目未要求，非 09 開頭的 10 碼仍通過")
+    @DisplayName("不驗證開頭數字——需求未要求，非 09 開頭的 10 碼仍通過")
     void doesNotValidatePrefix() {
         assertThat(violationsOf(requestWithPhone("1234567890"))).isEmpty();
     }
@@ -77,7 +77,7 @@ class RegisterRequestValidationTest {
     }
 
     @Test
-    @DisplayName("自我介紹未填時通過——題目標示可為空（C-4）")
+    @DisplayName("自我介紹未填時通過——需求標示可為空（C-4）")
     void allowsNullBiography() {
         RegisterRequest request =
                 new RegisterRequest("0912345678", "陳大文", "alice@example.com", "Test1234", null);

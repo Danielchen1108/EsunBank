@@ -255,7 +255,7 @@ class PostServiceTest {
     @Test
     @DisplayName("編輯與刪除不接受操作者身分——BG-4 裁決：不實作發文者身分檢查")
     void editAndDeleteDoNotTakeAnActorIdentity() {
-        // 題目 §2 的驗證範圍僅涵蓋「發文或留言」，未涵蓋編輯與刪除；
+        // 需求 §2 的驗證範圍僅涵蓋「發文或留言」，未涵蓋編輯與刪除；
         // owner 於 F004-REQ.md BG-4 裁決不實作發文者身分檢查。
         // 編輯指令不含操作者 ID，使「任何登入者皆可編輯／刪除」成為結構性事實而非遺漏。
         assertThat(PostUpdateCommand.class.getRecordComponents())

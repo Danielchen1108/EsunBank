@@ -3,7 +3,7 @@ package com.esunbank.social.common.security;
 /**
  * 已通過驗證的使用者（共用層）。
  *
- * <p>對應題目 §2「確保只有登入的使用者可以發文或留言」。
+ * <p>對應需求 §2「確保只有登入的使用者可以發文或留言」。
  *
  * <p>本型別是 Spring Security 的 {@code Authentication} principal，
  * 由 F003 的 JWT 過濾器在驗證成功後放入 {@code SecurityContext}。

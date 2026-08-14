@@ -12,7 +12,7 @@ package com.esunbank.social.common.exception;
  * 軟刪除是內部實作（ADR-004），對用戶端而言已刪除的發文就是不存在。
  * 若分成兩種錯誤，等於告訴呼叫者「這篇發文曾經存在」——沒有必要外洩。
  *
- * <p>題目未定義此情境（{@code F005-REQ.md} OQ-1），但 SP 的存在性檢查
+ * <p>需求未定義此情境（{@code F005-REQ.md} OQ-1），但 SP 的存在性檢查
  * 使其必然發生，故須明確處理而非讓資料庫例外直接外洩。
  */
 public class CommentTargetPostNotFoundException extends RuntimeException {

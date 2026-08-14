@@ -4,7 +4,7 @@ import vue from '@vitejs/plugin-vue'
 /**
  * Vite 設定。
  *
- * proxy 是三層式架構（題目 §5）在開發期的接點：
+ * proxy 是三層式架構（需求 §5）在開發期的接點：
  * 前端開發伺服器（Web Server 角色）把 /api 請求轉發到
  * Spring Boot（Application Server 角色，預設 8080 埠）。
  *

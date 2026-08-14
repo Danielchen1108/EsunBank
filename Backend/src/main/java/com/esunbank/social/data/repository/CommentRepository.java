@@ -16,11 +16,11 @@ import com.esunbank.social.common.exception.CommentTargetPostNotFoundException;
 /**
  * 留言資料存取（資料層）。
  *
- * <p>依題目 §6「透過 Stored Procedure 存取資料庫」，本類別不撰寫任何 SQL 陳述式，
+ * <p>依需求 §6「透過 Stored Procedure 存取資料庫」，本類別不撰寫任何 SQL 陳述式，
  * 僅以 {@link CallableStatement} 呼叫 {@code DB/02_DDL_stored_procedures.sql}
  * 中定義的 Stored Procedure。
  *
- * <p><b>防 SQL Injection（題目 §6）：</b>所有參數以 {@code setLong} / {@code setString}
+ * <p><b>防 SQL Injection（需求 §6）：</b>所有參數以 {@code setLong} / {@code setString}
  * 綁定，不進行字串拼接。搭配 SP 內部的靜態語句（不使用 {@code PREPARE} + {@code CONCAT}），
  * 兩端共同構成防護——僅使用 SP 而 SP 內拼接動態 SQL 並不免疫注入。
  *

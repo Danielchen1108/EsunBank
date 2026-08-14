@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 /**
  * 留言領域模型（業務層）。
  *
- * <p>對應題目第 2 頁 Comment 表，欄位由 {@code sp_comment_list_visible} 取得，
+ * <p>對應需求規格 Comment 表，欄位由 {@code sp_comment_list_visible} 取得，
  * 巢狀於 {@link Post#comments()} 中隨發文列表一併回傳（D-13）。
  *
  * <p><b>不含 {@code postId}：</b>它是業務層分組時用的鍵，不是留言本身的屬性。

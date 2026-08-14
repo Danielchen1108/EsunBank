@@ -20,7 +20,7 @@ USE esunbank_social;
 -- -----------------------------------------------------------------------------
 -- user — 使用者
 -- -----------------------------------------------------------------------------
--- 題目第 2 頁 User 表。phone 為題目未列但 §1「以手機號碼進行註冊與登入」
+-- 需求規格 User 表。phone 為需求未列但 §1「以手機號碼進行註冊與登入」
 -- 所必需，依第 2 頁「請包含，但不限制僅能有以下」新增。
 -- -----------------------------------------------------------------------------
 CREATE TABLE `user` (
@@ -29,8 +29,8 @@ CREATE TABLE `user` (
     user_name   VARCHAR(50)     NOT NULL                COMMENT '使用者名稱',
     email       VARCHAR(255)    NOT NULL                COMMENT '使用者電子郵件',
     password    VARCHAR(72)     NOT NULL                COMMENT '密碼：BCrypt 加鹽雜湊後儲存。BCrypt 輸出固定 60 字元，取 72 留緩衝（AC-12）',
-    cover_image VARCHAR(255)        NULL DEFAULT NULL   COMMENT '封面照片路徑。題目標示為非必要欄位',
-    biography   VARCHAR(500)    NOT NULL DEFAULT ''     COMMENT '自我介紹。題目未標非必要故為 NOT NULL，給空字串預設避免註冊時強制填寫',
+    cover_image VARCHAR(255)        NULL DEFAULT NULL   COMMENT '封面照片路徑。需求標示為非必要欄位',
+    biography   VARCHAR(500)    NOT NULL DEFAULT ''     COMMENT '自我介紹。需求未標非必要故為 NOT NULL，給空字串預設避免註冊時強制填寫',
 
     PRIMARY KEY (user_id),
     UNIQUE KEY uk_user_phone (phone),
@@ -42,7 +42,7 @@ CREATE TABLE `user` (
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
   COLLATE = utf8mb4_unicode_ci
-  COMMENT = '使用者。無 is_deleted：題目功能清單無「刪除使用者」';
+  COMMENT = '使用者。無 is_deleted：需求功能清單無「刪除使用者」';
 
 
 -- -----------------------------------------------------------------------------
@@ -52,9 +52,9 @@ CREATE TABLE `post` (
     post_id    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT               COMMENT '發文 ID',
     user_id    BIGINT UNSIGNED NOT NULL                              COMMENT '發文者，FK to user',
     content    VARCHAR(2000)   NOT NULL                              COMMENT '發佈文章內容。長度上限依 ADR-005',
-    image      VARCHAR(255)        NULL DEFAULT NULL                 COMMENT '圖片路徑。題目標示為非必要欄位',
+    image      VARCHAR(255)        NULL DEFAULT NULL                 COMMENT '圖片路徑。需求標示為非必要欄位',
     created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP    COMMENT '發佈時間，由 DB 層產生（AC-14）',
-    is_deleted BOOLEAN         NOT NULL DEFAULT FALSE                COMMENT '軟刪除旗標（ADR-004）。題目未列，依「不限制僅能有以下」新增',
+    is_deleted BOOLEAN         NOT NULL DEFAULT FALSE                COMMENT '軟刪除旗標（ADR-004）。需求未列，依「不限制僅能有以下」新增',
 
     PRIMARY KEY (post_id),
 

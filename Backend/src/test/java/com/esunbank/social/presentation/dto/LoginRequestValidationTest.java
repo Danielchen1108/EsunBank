@@ -58,7 +58,7 @@ class LoginRequestValidationTest {
     }
 
     @Test
-    @DisplayName("不驗證密碼強度——題目未定義（SCOPE-BOUNDARY.md R-3）")
+    @DisplayName("不驗證密碼強度——需求未定義（SCOPE-BOUNDARY.md R-3）")
     void doesNotValidatePasswordStrength() {
         assertThat(violationsOf(new LoginRequest("0912345678", "a"))).isEmpty();
     }

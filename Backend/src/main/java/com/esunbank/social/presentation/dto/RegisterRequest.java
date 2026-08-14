@@ -4,11 +4,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * 註冊請求（題目 §1）。
+ * 註冊請求（需求 §1）。
  *
- * <p>驗證規則僅涵蓋題目明文要求與 owner 追加項目。
+ * <p>驗證規則僅涵蓋需求明文要求與 owner 追加項目。
  * <b>刻意不驗證</b>手機開頭數字、國別碼、Email 格式、密碼強度——
- * 題目均未定義，依 {@code SCOPE-BOUNDARY.md} 判定原則 R-3 不實作。
+ * 需求均未定義，依 {@code SCOPE-BOUNDARY.md} 判定原則 R-3 不實作。
  *
  * @param phone     手機號碼，註冊與登入帳號。長度恰好 10 碼（F002 AC-8）
  * @param userName  使用者名稱

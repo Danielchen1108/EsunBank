@@ -18,10 +18,10 @@ import io.jsonwebtoken.security.Keys;
  *
  * <p>對應決策 ADR-003：登入驗證採 Spring Security + JWT。
  *
- * <p><b>為何是 JWT 而非 HttpSession：</b>題目 §6 要求 RESTful 風格，
+ * <p><b>為何是 JWT 而非 HttpSession：</b>需求 §6 要求 RESTful 風格，
  * REST 的無狀態特性與 JWT 相符；且前端為 Vue.js 的前後端分離架構（ADR-003 理由 1、2）。
  *
- * <p><b>刻意不設 {@code exp}：</b>題目未提及憑證有效期，owner 裁決 BG-3 不實作
+ * <p><b>刻意不設 {@code exp}：</b>需求未提及憑證有效期，owner 裁決 BG-3 不實作
  * （見 {@code SCOPE-BOUNDARY.md} Out of Scope）。憑證一經簽發即長期有效，
  * 風險已於 {@code F003-IMPACT.md} 明示接受。同理不實作更新（refresh）與登出。
  *
@@ -71,7 +71,7 @@ public class JwtTokenService {
      * 驗證憑證並取出使用者。
      *
      * <p>{@code verifyWith} 會檢查簽章：憑證內容一經竄改，或由其他金鑰簽發，
-     * 皆無法通過——這是題目 §2「只有登入的使用者可以發文或留言」的技術保證。
+     * 皆無法通過——這是需求 §2「只有登入的使用者可以發文或留言」的技術保證。
      *
      * <p>回傳 {@link Optional} 而非拋例外：呼叫端（過濾器）對「無憑證」與「憑證無效」
      * 的處理相同，都是不設定身分並交由授權規則決定，無須以例外區分。

@@ -20,9 +20,9 @@ import jakarta.validation.Valid;
 /**
  * 留言端點（展示層）。
  *
- * <p>對應題目 §4「使用者可以針對發文新增留言」。
+ * <p>對應需求 §4「使用者可以針對發文新增留言」。
  *
- * <p><b>本控制器只有新增。</b>題目 §4 原文僅此一句；編輯與刪除留言依
+ * <p><b>本控制器只有新增。</b>需求 §4 原文僅此一句；編輯與刪除留言依
  * {@code SCOPE-BOUNDARY.md} 判定為 Out of Scope。
  *
  * <p><b>讀取留言走 {@code GET /api/posts}（D-13）：</b>發文列表已一併帶出每則發文的留言，
@@ -30,7 +30,7 @@ import jakarta.validation.Valid;
  * 另開一支端點只會讓它逐篇再查一次（N+1）。該讀取邏輯歸屬 F004，
  * 與 {@code F005-REQ.md} 早已寫明的分工一致。
  *
- * <p><b>需驗證（題目 §2）：</b>本控制器的端點<b>不在</b> {@code SecurityConfig} 白名單內，
+ * <p><b>需驗證（需求 §2）：</b>本控制器的端點<b>不在</b> {@code SecurityConfig} 白名單內，
  * 由 {@code anyRequest().authenticated()} 的 deny-by-default 涵蓋，
  * 因此 F003 無須為本功能追加規則。未帶有效憑證時在過濾鏈即被擋為 401，
  * 請求不會進到本類別。
@@ -49,7 +49,7 @@ public class CommentController {
      * 針對指定發文新增留言。
      *
      * <p>路徑設計為 {@code /api/posts/{postId}/comments}：留言是發文的附屬資源，
-     * 巢狀路徑使歸屬關係直接呈現在 URI 上，符合題目 §6 的 RESTful 要求。
+     * 巢狀路徑使歸屬關係直接呈現在 URI 上，符合需求 §6 的 RESTful 要求。
      *
      * <p>回 201 Created 而非 200——建立了新資源。
      *

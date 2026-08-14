@@ -16,7 +16,7 @@ import com.esunbank.social.business.service.Comment;
  * <p><b>不含 is_deleted：</b>回應中的留言必然是可見的——
  * {@code sp_comment_list_visible} 同時過濾了留言與其所屬發文的軟刪除旗標（ADR-004）。
  *
- * <p><b>XSS（題目 §6）：</b>{@code content} 為使用者輸入且會回顯，後端原樣儲存與回傳，
+ * <p><b>XSS（需求 §6）：</b>{@code content} 為使用者輸入且會回顯，後端原樣儲存與回傳，
  * 跳脫由前端輸出端負責（Vue 的 {@code {{ }}} 插值預設跳脫 HTML）。
  * <b>前端不得對本欄位使用 {@code v-html}</b>——留言是本案 XSS 防線的主要落點。
  */

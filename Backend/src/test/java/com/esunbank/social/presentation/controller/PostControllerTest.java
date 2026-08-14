@@ -154,7 +154,7 @@ class PostControllerTest {
                 .andExpect(jsonPath("$[0].userName").value("陳大文"))
                 .andExpect(jsonPath("$[0].content").value("第一篇"))
                 .andExpect(jsonPath("$[0].createdAt").exists())
-                // 回應不含 image：欄位保留於 schema（題目第 2 頁），但無上傳功能故 API 不開放
+                // 回應不含 image：欄位保留於 schema（需求規格），但無上傳功能故 API 不開放
                 // （SCOPE-BOUNDARY.md R-3）。回一個永遠為 null 的欄位只會誤導前端。
                 .andExpect(jsonPath("$[0].image").doesNotExist());
     }
@@ -246,7 +246,7 @@ class PostControllerTest {
     @Test
     @DisplayName("任何登入者皆可編輯與刪除他人發文——BG-4 刻意決策，非授權遺漏")
     void anyAuthenticatedUserMayEditOthersPosts() throws Exception {
-        // 發文屬於 userId=1，操作者為 userId=7。題目 §2 的驗證範圍僅涵蓋「發文或留言」，
+        // 發文屬於 userId=1，操作者為 userId=7。需求 §2 的驗證範圍僅涵蓋「發文或留言」，
         // 未涵蓋編輯與刪除；owner 於 F004-REQ.md BG-4 裁決不實作發文者身分檢查。
         when(postService.update(any(PostUpdateCommand.class))).thenReturn(samplePost(1L, 1L, "被別人改掉"));
 

@@ -4,12 +4,12 @@ import { useRouter } from 'vue-router'
 import { createComment, createPost, deletePost, listPosts, updatePost } from '../api/client.js'
 
 /**
- * 發文與留言畫面（題目 §3 發文、§4 留言）。
+ * 發文與留言畫面（需求 §3 發文、§4 留言）。
  *
  * 一頁涵蓋「列出所有發文／新增／編輯／刪除」與「針對發文新增留言」，
  * 對應後端 F004 與 F005 的全部端點。
  *
- * ── XSS 防護（題目 §6）─────────────────────────────────────────
+ * ── XSS 防護（需求 §6）─────────────────────────────────────────
  * 發文內容、留言內容、使用者名稱都是使用者輸入，且會回顯在這個畫面上。
  * 後端刻意原樣儲存與回傳（不在寫入時改寫使用者資料，避免資料失真），
  * **跳脫的責任在輸出端，也就是這裡。**
@@ -29,7 +29,7 @@ import { createComment, createPost, deletePost, listPosts, updatePost } from '..
  * 留言列表：由 GET /api/posts 隨發文一併帶回（一次請求拿齊，避免每篇再打一次 API 的 N+1）。
  * 預設只顯示最後 3 則，其餘由「顯示全部」展開。
  *
- * 留言的編輯與刪除仍不做：題目 §4 只寫「新增留言」（SCOPE-BOUNDARY.md R-3），
+ * 留言的編輯與刪除仍不做：需求 §4 只寫「新增留言」（SCOPE-BOUNDARY.md R-3），
  * 後端也沒有對應端點。
  */
 const router = useRouter()
@@ -358,7 +358,7 @@ function formatExactTime(createdAt) {
   <section class="page">
     <h1>發文</h1>
 
-    <!-- 新增發文（題目 §3）。送出前的長度檢查與後端同規則，僅為體驗，後端仍會獨立驗證。 -->
+    <!-- 新增發文（需求 §3）。送出前的長度檢查與後端同規則，僅為體驗，後端仍會獨立驗證。 -->
     <form class="composer" novalidate @submit.prevent="onCreate">
       <label>
         發文內容
@@ -514,7 +514,7 @@ function formatExactTime(createdAt) {
       </div>
 
       <!--
-        針對發文新增留言（題目 §4）。編輯與刪除留言仍不做。
+        針對發文新增留言（需求 §4）。編輯與刪除留言仍不做。
 
         送出鈕只在輸入框有內容時出現：空著的時候，一則貼文下面掛一顆按不了的鈕
         是純粹的視覺噪音——社群動態是一路往下滑的，每則都多一顆灰鈕會很吵。
