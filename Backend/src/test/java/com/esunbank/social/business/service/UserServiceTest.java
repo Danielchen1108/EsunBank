@@ -22,7 +22,7 @@ import com.esunbank.social.common.security.JwtTokenService;
 import com.esunbank.social.data.repository.UserRepository;
 
 /**
- * 註冊業務邏輯（F002 AC-3）。
+ * 註冊業務邏輯。
  *
  * <p>本測試的核心是證明：**明碼密碼不會流入資料層**。
  * 需求規格明文要求「密碼請加鹽(salt)並經雜湊(Hash)後儲存，避免明碼外洩」。

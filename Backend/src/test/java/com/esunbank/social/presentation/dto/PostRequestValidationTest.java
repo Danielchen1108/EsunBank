@@ -15,9 +15,9 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 
 /**
- * 發文請求的欄位驗證（F004 AC-1、AC-4）。
+ * 發文請求的欄位驗證。
  *
- * <p>content 上限 2000 字元為 ADR-005 的裁決，與 {@code post.content VARCHAR(2000)} 一致。
+ * <p>content 上限 2000 字元，與 {@code post.content VARCHAR(2000)} 一致。
  * 在應用層先擋下，可避免超長輸入到資料庫才以 SQLException 失敗——那會回 500 而非可讀的 400。
  *
  * <p>邊界取 2000／2001：只測「遠超過」無法證明上限落在正確位置。
@@ -46,7 +46,7 @@ class PostRequestValidationTest {
     }
 
     @Test
-    @DisplayName("新增發文：內容 2000 字元時通過（ADR-005 上限）")
+    @DisplayName("新增發文：內容 2000 字元時通過")
     void acceptsContentAtMaxLength() {
         assertThat(violationsOf(new CreatePostRequest(repeat('a', 2000)))).isEmpty();
     }
@@ -71,8 +71,8 @@ class PostRequestValidationTest {
     @DisplayName("新增與編輯發文的請求皆不含 image——欄位保留於 schema，但 API 不開放填寫")
     void requestsDoNotExposeImage() {
         // 需求規格列有 Post.Image（標「非必要欄位」），故 DB schema 保留該欄；
-        // 但需求功能清單 §1–§4 沒有上傳功能，依 SCOPE-BOUNDARY.md R-3「沒寫就不用」，
-        // API 不開放填寫。此處把該裁決固化為可執行的規格，避免日後被當成漏掉的欄位補回來。
+        // 但需求的功能清單沒有上傳功能，沒寫的就不做，
+        // API 不開放填寫。此處把該決定固化為可執行的規格，避免日後被當成漏掉的欄位補回來。
         assertThat(CreatePostRequest.class.getRecordComponents())
                 .extracting(RecordComponent::getName)
                 .doesNotContain("image");

@@ -19,13 +19,13 @@ import com.esunbank.social.common.exception.CommentTargetPostNotFoundException;
 import com.esunbank.social.data.repository.CommentRepository;
 
 /**
- * 新增留言業務邏輯（F005 AC-1、AC-3）。
+ * 新增留言業務邏輯。
  *
  * <p>本測試的核心是證明：**留言的作者取自已驗證的身分，不取自請求內容**。
- * 需求 §2 要求「確保只有登入的使用者可以發文或留言」——若 userId 可由
+ * 需求要求「確保只有登入的使用者可以發文或留言」——若 userId 可由
  * 請求主體指定，任何人都能冒用他人身分留言。
  *
- * <p>不依賴真實資料庫：資料層以 mock 取代（見 {@code F005-TR.md} 測試分層）。
+ * <p>不依賴真實資料庫：資料層以 mock 取代。
  */
 @ExtendWith(MockitoExtension.class)
 class CommentServiceTest {

@@ -16,17 +16,17 @@ import com.esunbank.social.common.exception.CommentTargetPostNotFoundException;
 /**
  * 留言資料存取（資料層）。
  *
- * <p>依需求 §6「透過 Stored Procedure 存取資料庫」，本類別不撰寫任何 SQL 陳述式，
+ * <p>資料庫存取一律透過 Stored Procedure，本類別不撰寫任何 SQL 陳述式，
  * 僅以 {@link CallableStatement} 呼叫 {@code DB/02_DDL_stored_procedures.sql}
  * 中定義的 Stored Procedure。
  *
- * <p><b>防 SQL Injection（需求 §6）：</b>所有參數以 {@code setLong} / {@code setString}
+ * <p><b>防 SQL Injection：</b>所有參數以 {@code setLong} / {@code setString}
  * 綁定，不進行字串拼接。搭配 SP 內部的靜態語句（不使用 {@code PREPARE} + {@code CONCAT}），
  * 兩端共同構成防護——僅使用 SP 而 SP 內拼接動態 SQL 並不免疫注入。
  *
- * <p><b>範圍：</b>新增（F005），以及供發文列表帶出留言的整批讀取（{@link #listVisible()}，
- * 屬 F004——owner 於 D-13 明示追加，{@code F005-REQ.md} 早已寫明「若 F004 決定列表帶出留言，
- * 則讀取邏輯歸屬 F004」）。編輯與刪除留言仍依 {@code SCOPE-BOUNDARY.md} 判定為 Out of Scope。
+ * <p><b>範圍：</b>新增，以及供發文列表帶出留言的整批讀取（{@link #listVisible()}，
+ * 屬 ——後來追加，早已寫明「若 決定列表帶出留言，
+ * 讀取邏輯歸發文那一側。編輯與刪除留言不做。
  */
 @Repository
 public class CommentRepository {
@@ -38,7 +38,7 @@ public class CommentRepository {
      * <p>45000 是 SQL 標準保留給使用者自訂例外的 SQLSTATE，Spring 沒有對應的
      * {@code DataAccessException} 子類別可接（不像唯一鍵衝突有 {@code DuplicateKeyException}），
      * 因此轉譯必須發生在拿得到原始 {@link SQLException} 的資料層，
-     * 而非如 F002 那樣在業務層接 Spring 的抽象例外。
+     * 而非如 那樣在業務層接 Spring 的抽象例外。
      *
      * <p>本類別只呼叫 {@code sp_comment_create}，而該 SP 全文僅有一處 {@code SIGNAL}，
      * 故此 SQLSTATE 在這裡語意唯一，無須再比對訊息字串。
@@ -54,15 +54,14 @@ public class CommentRepository {
     /**
      * 呼叫 {@code sp_comment_create} 新增留言。
      *
-     * <p>目標發文是否存在且未被軟刪除，由 SP 內部檢查（{@code F001-DB.md}
-     * §「軟刪除的讀取規則」）。放在 SP 而非應用層的理由：省去一次資料庫往返，
+     * <p>目標發文是否存在且未被軟刪除，由 SP 內部檢查。放在 SP 而非應用層的理由：省去一次資料庫往返，
      * 並讓「檢查 + 寫入」這組邏輯集中在一處，不會散落到呼叫端各自重做。
      *
-     * <p><b>已知限制（TECH_DEBT TD-002）：</b>「同一次往返」不等於「同一個交易」。
+     * <p><b>已知限制：</b>「同一次往返」不等於「同一個交易」。
      * {@code sp_comment_create} 沒有 {@code START TRANSACTION}，存在性檢查也沒有加鎖，
      * 在 autocommit 下檢查與寫入是兩筆各自提交的交易，兩者之間仍有競態窗口。
      * 若該窗口內目標發文被其他連線軟刪除，會產生一則未刪除的留言掛在已刪除的發文下。
-     * 此限制已由 owner 裁決暫不修，記於 {@code memory/TECH_DEBT.md} TD-002。
+     * 此限制已由 後來決定暫不修。
      *
      * @return 新增的 comment_id
      * @throws CommentTargetPostNotFoundException 目標發文不存在或已被軟刪除
@@ -99,13 +98,13 @@ public class CommentRepository {
     }
 
     /**
-     * 呼叫 {@code sp_comment_list_visible} 一次取回所有可見留言（D-13）。
+     * 呼叫 {@code sp_comment_list_visible} 一次取回所有可見留言。
      *
      * <p>不接 postId 參數：發文列表需要的是「全部發文各自的留言」，逐篇查會變成 N+1。
      * 整批取回後由業務層依 {@code postId} 分組，整個列表固定兩次資料庫往返。
      *
      * <p><b>可見 = 留言與其所屬發文皆未軟刪除。</b>SP 內 JOIN {@code post} 並同時過濾兩張表的
-     * {@code is_deleted}（ADR-004）。只過濾 {@code comment.is_deleted} 不夠——TD-002 的競態
+     * {@code is_deleted}。只過濾 {@code comment.is_deleted} 不夠——的競態
      * 會產生「未刪除的留言掛在已刪除的發文下」的孤兒資料，過去沒有讀取管道所以看不見，
      * 一旦加上讀取就會浮現。過濾寫在 SP 內，本層與業務層都不需要記得補這個條件。
      *

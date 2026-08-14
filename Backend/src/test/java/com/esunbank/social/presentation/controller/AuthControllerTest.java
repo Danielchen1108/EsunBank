@@ -21,7 +21,7 @@ import com.esunbank.social.common.config.SecurityConfig;
 import com.esunbank.social.common.exception.DuplicatePhoneException;
 
 /**
- * 註冊端點（F002 AC-1、AC-2、AC-4）。
+ * 註冊端點。
  *
  * <p>匯入 {@link SecurityConfig} 一併驗證：註冊端點確實在白名單內。
  * 若未加入白名單，deny-by-default 會使本測試回 401 而非 201。
@@ -106,6 +106,6 @@ class AuthControllerTest {
                 .andExpect(status().isCreated());
 
         // XSS 的防護位置在輸出端（Vue 插值自動跳脫），不在寫入端改寫使用者資料。
-        // 見 F002-API.md § 安全考量。
+        // 見 安全考量。
     }
 }

@@ -14,15 +14,15 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 
 /**
- * 新增留言請求的欄位驗證（F005 AC-1）。
+ * 新增留言請求的欄位驗證。
  *
- * <p>500 字上限來自 ADR-005（owner 裁決），對應 schema 的
+ * <p>500 字上限來自 （後來決定），對應 schema 的
  * {@code comment.content VARCHAR(500)}。在應用層先驗證的理由：
  * 若放任超長內容送到資料庫，MySQL 會以 {@code Data too long} 中斷，
  * 使用者收到的是資料庫錯誤而非可讀的欄位提示。
  *
  * <p><b>刻意不驗證</b>的項目：留言內容不做 HTML 過濾或跳脫——
- * XSS 的防護位置在輸出端（見 {@code F005-API.md} § 安全考量）。
+ * XSS 的防護位置在輸出端。
  */
 class CreateCommentRequestValidationTest {
 
@@ -46,7 +46,7 @@ class CreateCommentRequestValidationTest {
     }
 
     @Test
-    @DisplayName("恰好 500 字通過——上限為包含（ADR-005）")
+    @DisplayName("恰好 500 字通過——上限為包含")
     void acceptsExactlyFiveHundredCharacters() {
         assertThat(violationsOf("字".repeat(500))).isEmpty();
     }

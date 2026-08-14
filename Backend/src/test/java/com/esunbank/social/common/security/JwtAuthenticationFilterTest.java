@@ -15,10 +15,10 @@ import org.springframework.web.util.WebUtils;
 import jakarta.servlet.DispatcherType;
 
 /**
- * JWT 驗證過濾器（F003 AC-3、AC-4、AC-5）。
+ * JWT 驗證過濾器。
  *
- * <p>本測試釘住 F003／F004／F005 的共用契約：驗證成功後放進 {@code SecurityContext}
- * 的 principal 必須是 {@link AuthenticatedUser}——F004 發文與 F005 留言以
+ * <p>本測試釘住 ／／的共用契約：驗證成功後放進 {@code SecurityContext}
+ * 的 principal 必須是 {@link AuthenticatedUser}——發文與 留言以
  * {@code @AuthenticationPrincipal AuthenticatedUser} 取得目前使用者，型別不符即整批失效。
  *
  * <p>驗證失敗時**不直接回 401**，而是留空 {@code SecurityContext} 繼續往下走：

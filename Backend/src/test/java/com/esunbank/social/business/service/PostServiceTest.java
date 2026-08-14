@@ -27,17 +27,17 @@ import com.esunbank.social.data.repository.PostRepository;
 import com.esunbank.social.data.repository.PostRepository.PostRow;
 
 /**
- * 發文業務邏輯（F004 AC-1、AC-3、AC-4、AC-5、AC-11）。
+ * 發文業務邏輯。
  *
  * <p>以 mock 取代資料層，本測試不連資料庫——SP 的實際行為由
  * {@code PostRepositoryIntegrationTest} 驗證。
  *
  * <p><b>本測試刻意涵蓋的兩個設計決策：</b>
  * <ol>
- *   <li>編輯前必須先確認目標存在且未被軟刪除（ADR-004 負面後果防範）</li>
- *   <li>編輯／刪除不檢查發文者身分（BG-4 裁決）——業務層方法簽章不接受操作者 ID，
+ *   <li>編輯前必須先確認目標存在且未被軟刪除</li>
+ *   <li>編輯／刪除不檢查發文者身分——業務層方法簽章不接受操作者 ID，
  *       即為「不做身分檢查」的結構性證明</li>
- *   <li>發文列表帶出留言時，留言由本層依 postId 分組（D-13）——
+ *   <li>發文列表帶出留言時，留言由本層依 postId 分組——
  *       兩支 SP 各取一份資料，分組正確與否只有本層能驗</li>
  * </ol>
  */
@@ -48,7 +48,7 @@ class PostServiceTest {
     private PostRepository postRepository;
 
     /**
-     * 業務層直接注入 {@link CommentRepository} 而非 {@code CommentService}（D-13）：
+     * 業務層直接注入 {@link CommentRepository} 而非 {@code CommentService}：
      * {@code business/package-info.java} 明訂業務層僅能呼叫 data 層。
      */
     @Mock
@@ -101,7 +101,7 @@ class PostServiceTest {
     }
 
     @Test
-    @DisplayName("列出所有發文：留言掛到各自所屬的發文（D-13）")
+    @DisplayName("列出所有發文：留言掛到各自所屬的發文")
     void groupsCommentsByTheirOwnPost() {
         when(postRepository.findAll()).thenReturn(List.of(post(1L, "第一篇"), post(2L, "第二篇")));
         // 兩支 SP 各取一份資料，掛錯發文只有本層的分組邏輯擋得住——
@@ -181,7 +181,7 @@ class PostServiceTest {
     }
 
     @Test
-    @DisplayName("編輯發文：回應保留該篇原有的留言——編輯只異動 content（D-13）")
+    @DisplayName("編輯發文：回應保留該篇原有的留言——編輯只異動 content")
     void updateKeepsExistingComments() {
         when(postRepository.findById(1L)).thenReturn(Optional.of(post(1L, "原始內容")));
         when(postRepository.update(1L, "修改後內容")).thenReturn(1);
@@ -253,10 +253,10 @@ class PostServiceTest {
     }
 
     @Test
-    @DisplayName("編輯與刪除不接受操作者身分——BG-4 裁決：不實作發文者身分檢查")
+    @DisplayName("編輯與刪除不接受操作者身分——不實作發文者身分檢查")
     void editAndDeleteDoNotTakeAnActorIdentity() {
-        // 需求 §2 的驗證範圍僅涵蓋「發文或留言」，未涵蓋編輯與刪除；
-        // owner 於 F004-REQ.md BG-4 裁決不實作發文者身分檢查。
+        // 需求的驗證範圍僅涵蓋「發文或留言」，未涵蓋編輯與刪除；
+        // 需求方於 不實作發文者身分檢查。
         // 編輯指令不含操作者 ID，使「任何登入者皆可編輯／刪除」成為結構性事實而非遺漏。
         assertThat(PostUpdateCommand.class.getRecordComponents())
                 .extracting(RecordComponent::getName)

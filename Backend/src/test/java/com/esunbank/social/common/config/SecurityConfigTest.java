@@ -21,14 +21,14 @@ import com.esunbank.social.common.security.JwtTokenService;
 import com.esunbank.social.presentation.controller.AuthController;
 
 /**
- * 授權規則（F003 AC-3、AC-4、AC-5）。
+ * 授權規則。
  *
- * <p>對應需求 §2「確保只有登入的使用者可以發文或留言」。
+ * <p>驗證需求：確保只有登入的使用者可以發文或留言。
  *
- * <p>本測試涵蓋 F004 發文與 F005 留言的路徑，但**不依賴其控制器是否已實作**——
+ * <p>本測試涵蓋 發文與 留言的路徑，但**不依賴其控制器是否已實作**——
  * Spring Security 的過濾鏈在 DispatcherServlet 之前執行，未登入的請求在路由之前就被擋下。
  * 因此「已登入」情境只斷言「不是 401／403」，不斷言後續狀態碼，
- * 避免 F004／F005 上線後本測試反而失敗。
+ * 避免 ／上線後本測試反而失敗。
  */
 @WebMvcTest(AuthController.class)
 @Import(SecurityConfig.class)
@@ -60,7 +60,7 @@ class SecurityConfigTest {
     }
 
     @Test
-    @DisplayName("未登入不能發文（AC-3）")
+    @DisplayName("未登入不能發文")
     void anonymousCannotCreatePost() throws Exception {
         expectUnauthorized(post("/api/posts"));
     }
@@ -72,13 +72,13 @@ class SecurityConfigTest {
     }
 
     @Test
-    @DisplayName("未登入不能新增留言（AC-4）")
+    @DisplayName("未登入不能新增留言")
     void anonymousCannotComment() throws Exception {
         expectUnauthorized(post("/api/posts/1/comments"));
     }
 
     @Test
-    @DisplayName("已登入可存取發文與留言端點（AC-5）")
+    @DisplayName("已登入可存取發文與留言端點")
     void authenticatedUserPassesAuthorization() throws Exception {
         expectNotBlockedByAuthorization(post("/api/posts").header(HttpHeaders.AUTHORIZATION, bearer()));
         expectNotBlockedByAuthorization(get("/api/posts").header(HttpHeaders.AUTHORIZATION, bearer()));
@@ -111,7 +111,7 @@ class SecurityConfigTest {
     @Test
     @DisplayName("白名單只有註冊與登入——其餘一律要求驗證")
     void healthEndpointNoLongerExists() throws Exception {
-        // 健康檢查端點已移除（需求 §1–§4 未要求）。
+        // 健康檢查端點已移除（未要求）。
         // 它曾在白名單內且未驗證即回報資料庫狀態；移除後這條路徑回到 deny by default。
         expectUnauthorized(get("/api/health"));
     }

@@ -21,7 +21,7 @@ import jakarta.validation.Valid;
 /**
  * 身分相關端點（展示層）。
  *
- * <p>對應需求 §1 註冊功能與 §2 登入驗證功能。
+ * <p>對應註冊與登入驗證功能。
  *
  * <p>本控制器的端點免驗證，須列於 {@code SecurityConfig} 白名單——
  * 否則 deny-by-default 會擋成 401。
@@ -57,7 +57,7 @@ public class AuthController {
     }
 
     /**
-     * 登入（需求 §2）。
+     * 登入。
      *
      * <p>回 200 OK 而非 201 Created——登入沒有建立任何資源，
      * 只是取得一張證明身分的憑證。

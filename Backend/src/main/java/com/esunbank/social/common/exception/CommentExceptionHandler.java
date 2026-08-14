@@ -24,7 +24,7 @@ public class CommentExceptionHandler {
     /**
      * 留言的目標發文不存在或已被軟刪除。
      *
-     * <p><b>回 404 Not Found 的理由</b>（需求未定義，{@code F005-REQ.md} OQ-1）：
+     * <p><b>回 404 Not Found 的理由</b>（需求未定義）：
      * {@code postId} 位於 URI 路徑 {@code /api/posts/{postId}/comments} 中，
      * 指的是父資源本身。父資源不存在時，REST 慣例即為 404。
      *

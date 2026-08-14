@@ -13,7 +13,7 @@ import com.esunbank.social.business.service.PostNotFoundException;
 /**
  * 發文端點的例外處理（展示層）。
  *
- * <p>僅套用於 {@link PostController}：F003 與 F005 正同時開發，各自的例外由各自處理，
+ * <p>僅套用於 {@link PostController}：與 正同時開發，各自的例外由各自處理，
  * 限定範圍可避免共用的例外處理器成為多方修改的衝突點。
  * 參數驗證等通用錯誤仍由共用層的 {@code GlobalExceptionHandler} 處理。
  *
@@ -25,7 +25,7 @@ public class PostExceptionHandler {
     /**
      * 找不到目標發文。
      *
-     * <p>回 404 Not Found。已被軟刪除的發文也走這條路徑（ADR-004）——
+     * <p>回 404 Not Found。已被軟刪除的發文也走這條路徑——
      * 對呼叫端而言「已刪除」與「不存在」等價，回應也不應洩漏該筆曾經存在。
      */
     @ExceptionHandler(PostNotFoundException.class)

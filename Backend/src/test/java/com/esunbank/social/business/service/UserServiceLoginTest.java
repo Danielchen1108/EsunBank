@@ -19,11 +19,11 @@ import com.esunbank.social.common.security.JwtTokenService;
 import com.esunbank.social.data.repository.UserRepository;
 
 /**
- * 登入業務邏輯（F003 AC-1、AC-2）。
+ * 登入業務邏輯。
  *
  * <p>本測試的核心是證明：**密碼以雜湊比對，不還原明碼**。
  * 需求規格的 User 表要求密碼加鹽雜湊後儲存，BCrypt 為單向函式，
- * 故驗證只能是「把輸入重新雜湊後比對」而非「解回明碼再比字串」（AC-2）。
+ * 故驗證只能是「把輸入重新雜湊後比對」而非「解回明碼再比字串」。
  *
  * <p>不使用 mock 的 {@code PasswordEncoder}——改用真實的 {@link BCryptPasswordEncoder}，
  * 才能真正證明雜湊值與明碼比對得起來。

@@ -10,11 +10,11 @@ import org.springframework.stereotype.Repository;
 /**
  * 使用者資料存取（資料層）。
  *
- * <p>依需求 §6「透過 Stored Procedure 存取資料庫」，本類別不撰寫任何 SQL 陳述式，
+ * <p>資料庫存取一律透過 Stored Procedure，本類別不撰寫任何 SQL 陳述式，
  * 僅以 {@link CallableStatement} 呼叫 {@code DB/02_DDL_stored_procedures.sql}
  * 中定義的 Stored Procedure。
  *
- * <p><b>防 SQL Injection（需求 §6）：</b>所有參數以 {@code setString} 綁定，
+ * <p><b>防 SQL Injection：</b>所有參數以 {@code setString} 綁定，
  * 不進行字串拼接。搭配 SP 內部的靜態語句（不使用 {@code PREPARE} + {@code CONCAT}），
  * 兩端共同構成防護——僅使用 SP 而 SP 內拼接動態 SQL 並不免疫注入。
  */
@@ -61,11 +61,10 @@ public class UserRepository {
     }
 
     /**
-     * 呼叫 {@code sp_user_find_by_phone} 依手機號碼取出登入所需資料（F003）。
+     * 呼叫 {@code sp_user_find_by_phone} 依手機號碼取出登入所需資料。
      *
      * <p><b>回傳雜湊值而非在資料庫比對密碼：</b>BCrypt 的 salt 內嵌於雜湊值中，
-     * 資料庫無從重算，比對只能在應用層以 {@code PasswordEncoder.matches()} 完成
-     * （F003 AC-2）。
+     * 資料庫無從重算，比對只能在應用層以 {@code PasswordEncoder.matches()} 完成。
      *
      * <p>SP 另回傳 {@code user_name}、{@code email}、{@code cover_image}、
      * {@code biography}，此處刻意不取——登入只需要判斷「是誰」與「密碼對不對」，

@@ -6,10 +6,10 @@ import AuthLayout from '../components/AuthLayout.vue'
 import PasswordField from '../components/PasswordField.vue'
 
 /**
- * 註冊畫面（需求 §1）。
+ * 註冊畫面。
  *
- * 前端驗證僅為體驗優化，後端仍會獨立驗證（F002 AC-8）；
- * 資料庫另有 CHECK 約束（F001 AC-10）。三層各自把關。
+ * 前端驗證僅為體驗優化，後端仍會獨立驗證；
+ * 資料庫另有 CHECK 約束。三層各自把關。
  */
 const form = reactive({
   phone: '',
@@ -39,7 +39,7 @@ async function onSubmit() {
     const result = await register({ ...form })
     successUserId.value = result.userId
 
-    // 註冊不自動登入（需求未要求，F002-REQ.md Non-goals），
+    // 註冊不自動登入（需求未要求，Non-goals），
     // 但也不該把人留在原地自己找路。帶手機號碼過去，登入頁不必重打。
     setTimeout(() => {
       router.replace({ name: 'login', query: { phone: form.phone } })

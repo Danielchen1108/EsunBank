@@ -38,15 +38,15 @@ import com.esunbank.social.business.service.PostUpdateCommand;
 import com.esunbank.social.common.security.AuthenticatedUser;
 
 /**
- * 發文端點（F004 AC-1、AC-3、AC-4、AC-5、AC-7、AC-8）。
+ * 發文端點。
  *
- * <p><b>為何 {@code addFilters = false}：</b>F003 登入驗證的 JWT 過濾鏈尚在開發中。
- * 本測試驗證的是控制器行為，不是過濾鏈設定——後者屬 F003 職責，於該功能的測試中驗證。
+ * <p><b>為何 {@code addFilters = false}：</b>登入驗證的 JWT 過濾鏈尚在開發中。
+ * 本測試驗證的是控制器行為，不是過濾鏈設定——後者屬 職責，於該功能的測試中驗證。
  * 目前使用者改以 {@code authentication(...)} 直接注入
- * {@link AuthenticatedUser}（F003／F004／F005 的共用契約）。
+ * {@link AuthenticatedUser}（／／的共用契約）。
  *
- * <p>因此 <b>AC-2「未登入者無法新增發文」不在本測試涵蓋範圍</b>：
- * 該行為由 {@code SecurityConfig} 的 deny-by-default 與 F003 的過濾鏈保證。
+ * <p>因此 <b>「未登入者無法新增發文」不在本測試涵蓋範圍</b>：
+ * 該行為由 {@code SecurityConfig} 的 deny-by-default 與 JWT 過濾鏈保證。
  */
 @WebMvcTest(PostController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -64,7 +64,7 @@ class PostControllerTest {
     }
 
     /**
-     * 模擬 F003 過濾鏈驗證成功後放入 SecurityContext 的 principal。
+     * 模擬 過濾鏈驗證成功後放入 SecurityContext 的 principal。
      *
      * <p>直接寫入 {@link TestSecurityContextHolder} 而非用
      * {@code SecurityMockMvcRequestPostProcessors.authentication(...)}：後者把 Authentication
@@ -97,7 +97,7 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("新增發文回 201 與 postId，userId 取自登入者而非請求內容（AC-1、AC-6）")
+    @DisplayName("新增發文回 201 與 postId，userId 取自登入者而非請求內容")
     void createsPost() throws Exception {
         when(postService.create(any(PostCreateCommand.class))).thenReturn(9L);
 
@@ -130,7 +130,7 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("新增發文：內容超過 2000 字元回 400（ADR-005）")
+    @DisplayName("新增發文：內容超過 2000 字元回 400")
     void rejectsOversizedContent() throws Exception {
         String body = "{ \"content\": \"" + "a".repeat(2001) + "\" }";
 
@@ -143,7 +143,7 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("列出所有發文回 200 與陣列（AC-3）")
+    @DisplayName("列出所有發文回 200 與陣列")
     void listsPosts() throws Exception {
         when(postService.listAll()).thenReturn(List.of(samplePost(1L, 1L, "第一篇"), samplePost(2L, 3L, "第二篇")));
 
@@ -154,16 +154,16 @@ class PostControllerTest {
                 .andExpect(jsonPath("$[0].userName").value("陳大文"))
                 .andExpect(jsonPath("$[0].content").value("第一篇"))
                 .andExpect(jsonPath("$[0].createdAt").exists())
-                // 回應不含 image：欄位保留於 schema（需求規格），但無上傳功能故 API 不開放
-                // （SCOPE-BOUNDARY.md R-3）。回一個永遠為 null 的欄位只會誤導前端。
+                // 回應不含 image：欄位保留於 schema（需求規格），但無上傳功能故 API 不開放。
+                // 回一個永遠為 null 的欄位只會誤導前端。
                 .andExpect(jsonPath("$[0].image").doesNotExist());
     }
 
     @Test
-    @DisplayName("列出所有發文一併帶出留言，欄位齊全且順序保留（D-13）")
+    @DisplayName("列出所有發文一併帶出留言，欄位齊全且順序保留")
     void listIncludesComments() throws Exception {
-        // 本測試取代原本的 listDoesNotIncludeComments——OQ-1 原決定不帶出，
-        // 後由 owner 明示追加（D-13）。舊測試把該決定固化成規格，故一併反轉。
+        // 本測試取代原本的 listDoesNotIncludeComments——不帶出，
+        // 後由 後來追加。舊測試把該決定固化成規格，故一併反轉。
         when(postService.listAll()).thenReturn(List.of(samplePost(1L, 1L, "第一篇", List.of(
                 sampleComment(11L, 2L, "先留的", 40),
                 sampleComment(12L, 3L, "後留的", 45)))));
@@ -195,7 +195,7 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("編輯發文回 200 與更新後內容（AC-4）")
+    @DisplayName("編輯發文回 200 與更新後內容")
     void updatesPost() throws Exception {
         when(postService.update(any(PostUpdateCommand.class))).thenReturn(samplePost(1L, 1L, "修改後內容"));
 
@@ -226,7 +226,7 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("刪除發文回 204（AC-5）")
+    @DisplayName("刪除發文回 204")
     void deletesPost() throws Exception {
         mockMvc.perform(delete("/api/posts/1").with(loginAs(2L)))
                 .andExpect(status().isNoContent());
@@ -244,10 +244,10 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("任何登入者皆可編輯與刪除他人發文——BG-4 刻意決策，非授權遺漏")
+    @DisplayName("任何登入者皆可編輯與刪除他人發文——刻意決策，非授權遺漏")
     void anyAuthenticatedUserMayEditOthersPosts() throws Exception {
-        // 發文屬於 userId=1，操作者為 userId=7。需求 §2 的驗證範圍僅涵蓋「發文或留言」，
-        // 未涵蓋編輯與刪除；owner 於 F004-REQ.md BG-4 裁決不實作發文者身分檢查。
+        // 發文屬於 userId=1，操作者為 userId=7。需求的驗證範圍僅涵蓋「發文或留言」，
+        // 未涵蓋編輯與刪除；需求方於 不實作發文者身分檢查。
         when(postService.update(any(PostUpdateCommand.class))).thenReturn(samplePost(1L, 1L, "被別人改掉"));
 
         mockMvc.perform(put("/api/posts/1")
@@ -263,7 +263,7 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("XSS 輸入原樣接收，不在寫入時改寫（AC-8）")
+    @DisplayName("XSS 輸入原樣接收，不在寫入時改寫")
     void storesUserInputVerbatim() throws Exception {
         when(postService.create(any(PostCreateCommand.class))).thenReturn(9L);
 
@@ -278,7 +278,7 @@ class PostControllerTest {
         ArgumentCaptor<PostCreateCommand> captor = ArgumentCaptor.forClass(PostCreateCommand.class);
         verify(postService).create(captor.capture());
         // XSS 的防護位置在輸出端（Vue 插值自動跳脫），不在寫入端改寫使用者資料。
-        // 見 F004-API.md § 安全考量；前端不得對 content 使用 v-html。
+        // 見 安全考量；前端不得對 content 使用 v-html。
         assertThat(captor.getValue().content()).isEqualTo("<script>alert(1)</script>");
     }
 }

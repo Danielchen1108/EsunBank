@@ -11,9 +11,9 @@ package com.esunbank.social.business.service;
  * 位置互換編譯器不會報錯，留言會被記到錯誤的作者或發文上。具名欄位杜絕此類錯誤。
  *
  * @param userId  留言者。<b>取自已驗證身分，不由請求主體指定</b>——
- *                否則任何人皆可冒用他人身分留言（需求 §2）
+ *                否則任何人皆可冒用他人身分留言
  * @param postId  目標發文，取自 URI 路徑
- * @param content 留言內容，最長 500 字（ADR-005）
+ * @param content 留言內容，最長 500 字
  */
 public record CommentCreateCommand(
         Long userId,

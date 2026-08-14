@@ -25,14 +25,15 @@ import org.springframework.test.web.servlet.MvcResult;
 import com.esunbank.social.common.security.AuthenticatedUser;
 
 /**
- * 新增留言的全鏈路驗證：展示層 → 業務層 → 資料層 → 真實 MySQL（F005 AC-1、AC-3、AC-4）。
+ * 新增留言的全鏈路驗證：展示層 → 業務層 → 資料層 → 真實 MySQL。
  *
  * <p>與 {@code CommentControllerTest} 的分工：該測試以 mock 取代業務層，驗證控制器本身；
  * 本測試不 mock 任何一層，驗證四層確實接得起來，且 SP 的錯誤真的會變成 404。
  *
  * <p><b>未涵蓋：安全過濾鏈。</b>{@code addFilters = false} 的理由同
- * {@code CommentControllerTest}——F003 尚未完成，無法產生型別為 {@link AuthenticatedUser}
- * 的 principal。AC-2（未登入被擋下）改以實際 HTTP 請求驗證，結果見 {@code F005-TR.md}。
+ * {@code CommentControllerTest}——本測試要驗的是四層接得起來，不重複驗證過濾鏈，
+ * 也就不需要產生型別為 {@link AuthenticatedUser} 的 principal。
+ * 「未登入者會被擋下」由 {@code SecurityConfigTest} 以實際 HTTP 請求驗證。
  *
  * <p>啟用方式與 {@code CommentRepositoryIntegrationTest} 相同，需 3310 埠的 MySQL 實例。
  */
@@ -49,7 +50,7 @@ class CommentEndToEndTest {
     @Autowired
     private MockMvc mockMvc;
 
-    /** 僅測試用，用於確認寫入結果——讀取留言不在 F005 範圍內。 */
+    /** 僅測試用，用於確認寫入結果。 */
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
@@ -94,7 +95,7 @@ class CommentEndToEndTest {
         var row = jdbcTemplate.queryForMap(
                 "SELECT user_id, post_id, content FROM `comment` WHERE comment_id = ?", commentId);
 
-        // 作者取自 principal 而非請求主體（需求 §2）
+        // 作者取自 principal 而非請求主體
         assertThat(((Number) row.get("user_id")).longValue()).isEqualTo(CURRENT_USER.userId());
         assertThat(((Number) row.get("post_id")).longValue()).isEqualTo(1L);
         assertThat(row.get("content")).isEqualTo(content);
@@ -120,7 +121,7 @@ class CommentEndToEndTest {
     }
 
     @Test
-    @DisplayName("超過 500 字：400，且在進資料庫前就被擋下（ADR-005）")
+    @DisplayName("超過 500 字：400，且在進資料庫前就被擋下")
     void rejectsTooLongContentBeforeReachingDatabase() throws Exception {
         Long before = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM `comment`", Long.class);
 

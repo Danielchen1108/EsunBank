@@ -22,7 +22,7 @@ import com.esunbank.social.common.config.SecurityConfig;
 import com.esunbank.social.common.exception.InvalidCredentialsException;
 
 /**
- * 登入端點（F003 AC-1、AC-6）。
+ * 登入端點。
  *
  * <p>匯入 {@link SecurityConfig} 一併驗證：登入端點確實在白名單內。
  * 若未加入白名單，deny-by-default 會使登入本身需要先登入——死結。

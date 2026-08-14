@@ -6,7 +6,7 @@ import AuthLayout from '../components/AuthLayout.vue'
 import PasswordField from '../components/PasswordField.vue'
 
 /**
- * 登入畫面（需求 §2）。
+ * 登入畫面。
  *
  * 登入後前端只保存憑證與顯示名稱，不保存密碼——密碼送出後不再留存於任何地方。
  *
@@ -14,7 +14,7 @@ import PasswordField from '../components/PasswordField.vue'
  * 沒有指定時回發文牆。**不讓使用者自己找路**：他點「發文」被帶來這裡，
  * 登入完就該回到發文，而不是停在一則「登入成功」的訊息上。
  *
- * 沒有「記住我」：需求未提及，依 SCOPE-BOUNDARY.md R-3 不實作。
+ * 沒有「記住我」：需求未提及，依 R-3 不實作。
  */
 const router = useRouter()
 const route = useRoute()

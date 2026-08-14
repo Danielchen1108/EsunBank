@@ -16,12 +16,12 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
 /**
- * JWT 簽發與驗證（F003 AC-1）。
+ * JWT 簽發與驗證。
  *
  * <p>本測試的核心是證明：**憑證無法被偽造或竄改**。
- * 需求 §2 要求「確保只有登入的使用者可以發文或留言」——若簽章可繞過，該保證即失效。
+ * 需求要求「確保只有登入的使用者可以發文或留言」——若簽章可繞過，該保證即失效。
  *
- * <p>另驗證 token **不含 {@code exp}**：ADR-003 明示不實作有效期，
+ * <p>另驗證 token **不含 {@code exp}**：不實作有效期，
  * 這是刻意的範圍決策，須以測試釘住，避免日後被無意識加上。
  */
 class JwtTokenServiceTest {
@@ -48,7 +48,7 @@ class JwtTokenServiceTest {
     }
 
     @Test
-    @DisplayName("token 不含 exp——ADR-003 明示不實作有效期")
+    @DisplayName("token 不含 exp——不實作有效期")
     void tokenHasNoExpiration() {
         String token = jwtTokenService.issue(user);
 

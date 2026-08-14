@@ -14,20 +14,20 @@ import org.springframework.transaction.annotation.Transactional;
 import com.esunbank.social.common.exception.CommentTargetPostNotFoundException;
 
 /**
- * 留言資料層的端到端驗證（F005 AC-3、AC-6、AC-7；讀取部分為 F004 D-13）。
+ * 留言資料層對真實 MySQL 的整合測試。
  *
  * <p>單元測試以 mock 取代資料層，證明不了幾件只有真實 MySQL 才成立的事：
  * <ul>
  *   <li>{@code sp_comment_create} 的 {@code SIGNAL SQLSTATE '45000'}
  *       確實被轉譯為 {@link CommentTargetPostNotFoundException}</li>
- *   <li>注入字串經 {@code CallableStatement} 綁定後原樣存為文字（需求 §6）</li>
+ *   <li>注入字串經 {@code CallableStatement} 綁定後原樣存為文字</li>
  *   <li>{@code sp_comment_list_visible} 的兩層 {@code is_deleted} 過濾與排序
  *       ——過濾與排序都寫在 SP 內，mock 掉資料層就等於把要驗的東西一起 mock 掉了</li>
  * </ul>
  *
  * <p><b>為何預設不執行：</b>本測試需要一個已灌入 {@code DB/} 三支腳本的 MySQL 實例。
  * 若無條件執行，其他人在沒有資料庫時跑 {@code ./mvnw test} 會失敗。
- * 啟用方式（見 {@code F005-TR.md} 端到端驗證）：
+ * 啟用方式：
  *
  * <pre>{@code
  * ./mvnw test -Df005.integration=true -Dtest=CommentRepositoryIntegrationTest
@@ -47,7 +47,7 @@ class CommentRepositoryIntegrationTest {
 
     /**
      * 僅測試用。用於直接檢查資料列，以及佈置 SP 或資料層刻意不提供的邊界狀態
-     * （例如軟刪除單一留言、製造 TD-002 的孤兒留言）——
+     * （例如軟刪除單一留言、製造掛在已刪除發文下的孤兒留言）——
      * 那些不是產品功能，不該為了測試而在 {@code DB/} 或資料層增加對應方法。
      */
     @Autowired
@@ -78,13 +78,13 @@ class CommentRepositoryIntegrationTest {
         assertThat(row.get("content")).isEqualTo(content);
         assertThat(((Number) row.get("user_id")).longValue()).isEqualTo(EXISTING_USER_ID);
         assertThat(((Number) row.get("post_id")).longValue()).isEqualTo(EXISTING_POST_ID);
-        // created_at 由資料庫預設值產生（F001 AC-14），應用層不填
+        // created_at 由資料庫預設值產生，應用層不填
         assertThat(row.get("created_at")).isNotNull();
         assertThat(row.get("is_deleted")).isEqualTo(false);
     }
 
     @Test
-    @DisplayName("對已軟刪除的發文新增留言被 SP 擋下（ADR-004）")
+    @DisplayName("對已軟刪除的發文新增留言被 SP 擋下")
     void rejectsSoftDeletedPost() {
         Long deletedPostId = softDeletedPostId();
         assertThat(deletedPostId).as("種子資料應含一筆已軟刪除的發文").isNotNull();
@@ -106,7 +106,7 @@ class CommentRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("SQL Injection 字串原樣存為文字，comment 表完好（需求 §6）")
+    @DisplayName("SQL Injection 字串原樣存為文字，comment 表完好")
     void storesInjectionStringAsPlainText() {
         String injection = "'); DROP TABLE `comment`; --";
         Long before = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM `comment`", Long.class);
@@ -122,7 +122,7 @@ class CommentRepositoryIntegrationTest {
     }
 
     // -------------------------------------------------------------------------
-    // listVisible()（F004 D-13）
+    // listVisible()
     //
     // 以下測試多半要先佈置「不該被看見」的資料。改狀態的測試一律加 @Transactional，
     // 讓 Spring 測試框架在結束時回滾——種子資料是共用的，測完留下髒資料，
@@ -152,7 +152,7 @@ class CommentRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("列出可見留言：排除已軟刪除的留言（ADR-004）")
+    @DisplayName("列出可見留言：排除已軟刪除的留言")
     @Transactional
     void excludesSoftDeletedComments() {
         Long commentId = commentRepository.create(EXISTING_USER_ID, EXISTING_POST_ID, "這則將被軟刪除");
@@ -168,14 +168,14 @@ class CommentRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("列出可見留言：排除掛在已刪除發文下的孤兒留言（TECH_DEBT TD-002）")
+    @DisplayName("列出可見留言：排除掛在已刪除發文下的孤兒留言")
     @Transactional
     void excludesOrphanCommentsOnSoftDeletedPost() {
         Long deletedPostId = softDeletedPostId();
         assertThat(deletedPostId).as("種子資料應含一筆已軟刪除的發文").isNotNull();
 
         // 直接 INSERT 而非走 sp_comment_create：後者會擋下對已刪除發文的留言。
-        // 這裡要重現的正是 TD-002 的競態產物——存在性檢查通過後、寫入前發文才被刪除，
+        // 這裡要重現的正是那個競態產物——存在性檢查通過後、寫入前發文才被刪除，
         // 於是留下一則 is_deleted = FALSE 卻掛在已刪除發文下的孤兒留言。
         // 過去沒有讀取管道所以看不見；一旦列表帶出留言，它就會浮上畫面。
         jdbcTemplate.update(

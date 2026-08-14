@@ -13,7 +13,7 @@ import com.esunbank.social.data.repository.UserRepository;
 /**
  * 使用者業務邏輯（業務層）。
  *
- * <p>對應需求 §1 註冊功能與 §2 登入驗證功能。兩者共用同一個服務：
+ * <p>對應註冊與登入驗證功能。兩者共用同一個服務：
  * 都以手機號碼為帳號、都圍繞密碼雜湊，拆開反而讓「加密與比對必須成對」這件事變得不明顯。
  */
 @Service
@@ -40,7 +40,7 @@ public class UserService {
      * <b>明碼在此結束，不會流入資料層。</b>
      *
      * <p>未使用 {@code @Transactional}：僅異動 {@code user} 單表，
-     * 未觸發需求 §6「同時異動多個資料表」的條件（見 {@code F002-REQ.md} OQ-3）。
+     * 未觸發需求「同時異動多個資料表」的條件。
      */
     public Long register(RegisterCommand command) {
         String passwordHash = passwordEncoder.encode(command.password());
@@ -60,22 +60,21 @@ public class UserService {
     }
 
     /**
-     * 登入（需求 §2）。
+     * 登入。
      *
-     * <p><b>密碼比對方式（AC-2）：</b>資料庫存的是 BCrypt 雜湊值，為單向函式，
+     * <p><b>密碼比對方式：</b>資料庫存的是 BCrypt 雜湊值，為單向函式，
      * 無法還原成明碼。故驗證是「把使用者輸入的明碼以同一組 salt 重新雜湊後比較」——
      * 這正是 {@link PasswordEncoder#matches(CharSequence, String)} 的作用，
      * salt 由雜湊值本身攜帶。**任何「解密後比字串」的寫法都是錯的。**
      *
      * <p><b>兩種失敗共用同一個例外：</b>查無此手機號碼與密碼不符都拋
-     * {@link InvalidCredentialsException}，使登入端點無法被用來探測帳號是否存在
-     * （{@code F003-REQ.md} OQ-3）。
+     * {@link InvalidCredentialsException}，使登入端點無法被用來探測帳號是否存在。
      *
-     * <p>驗證通過後簽發 JWT。<b>不設有效期</b>——需求未提及，owner 裁決不實作
-     * （ADR-003、{@code SCOPE-BOUNDARY.md}）。同理不提供更新與登出。
+     * <p>驗證通過後簽發 JWT。<b>不設有效期</b>——需求未提及，後來決定不實作。
+     * 同理不提供更新與登出。
      *
-     * <p>未使用 {@code @Transactional}：純唯讀單表查詢，未觸發需求 §6
-     * 「同時異動多個資料表」的條件。
+     * <p>未使用 {@code @Transactional}：純唯讀單表查詢，未觸發需求
+     * 「同時異動多個資料表」的條件，因此不需要交易。
      */
     public LoginResult login(LoginCommand command) {
         UserRepository.UserCredentials credentials = userRepository.findByPhone(command.phone())

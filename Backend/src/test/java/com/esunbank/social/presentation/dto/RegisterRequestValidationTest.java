@@ -14,10 +14,10 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 
 /**
- * 註冊請求的欄位驗證（F002 AC-8）。
+ * 註冊請求的欄位驗證。
  *
- * <p>手機號碼長度為 owner 於 2026-08-13 追加的要求：**僅驗長度 10 碼**，
- * 不驗開頭數字與國別碼（見 SCOPE-BOUNDARY.md）。
+ * <p>手機號碼長度為 需求方於 2026-08-13 追加的要求：**僅驗長度 10 碼**，
+ * 不驗開頭數字與國別碼。
  */
 class RegisterRequestValidationTest {
 

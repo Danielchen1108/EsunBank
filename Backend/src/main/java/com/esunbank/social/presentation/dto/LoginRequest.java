@@ -4,7 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * 登入請求（需求 §1、§2）。
+ * 登入請求。
  *
  * <p><b>不驗最小長度</b>——與 {@code RegisterRequest} 不同。註冊要決定什麼資料能進資料庫，
  * 登入只要判斷帳密對不對。10 碼以下的手機號碼必然查無此帳號，由登入失敗路徑統一回 401 即可；

@@ -1,9 +1,8 @@
 -- =============================================================================
 -- EsunBank 社群媒體系統 — DDL
 -- =============================================================================
--- 對應設計文件：pipeline-artifacts/P02_TechDesign/F001-DB.md
--- 資料庫：MySQL 8.0+（ADR-002）
--- 字元集：utf8mb4（F001 AC-11，社群內容需支援中文與 emoji）
+
+-- 字元集：utf8mb4（社群內容需支援中文與 emoji）
 --
 -- 執行順序：01_DDL.sql -> 02_DDL_stored_procedures.sql -> 03_DML.sql
 -- =============================================================================
@@ -20,15 +19,15 @@ USE esunbank_social;
 -- -----------------------------------------------------------------------------
 -- user — 使用者
 -- -----------------------------------------------------------------------------
--- 需求規格 User 表。phone 為需求未列但 §1「以手機號碼進行註冊與登入」
+-- 需求規格的 User 表。phone 為需求未列，但「以手機號碼進行註冊與登入」
 -- 所必需，依第 2 頁「請包含，但不限制僅能有以下」新增。
 -- -----------------------------------------------------------------------------
 CREATE TABLE `user` (
     user_id     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '使用者 ID',
-    phone       CHAR(10)        NOT NULL                COMMENT '手機號碼，註冊與登入帳號。CHAR(10) 於 DB 層強制 10 碼（AC-10）',
+    phone       CHAR(10)        NOT NULL                COMMENT '手機號碼，註冊與登入帳號。CHAR(10) 於 DB 層強制 10 碼',
     user_name   VARCHAR(50)     NOT NULL                COMMENT '使用者名稱',
     email       VARCHAR(255)    NOT NULL                COMMENT '使用者電子郵件',
-    password    VARCHAR(72)     NOT NULL                COMMENT '密碼：BCrypt 加鹽雜湊後儲存。BCrypt 輸出固定 60 字元，取 72 留緩衝（AC-12）',
+    password    VARCHAR(72)     NOT NULL                COMMENT '密碼：BCrypt 加鹽雜湊後儲存。BCrypt 輸出固定 60 字元，取 72 留緩衝',
     cover_image VARCHAR(255)        NULL DEFAULT NULL   COMMENT '封面照片路徑。需求標示為非必要欄位',
     biography   VARCHAR(500)    NOT NULL DEFAULT ''     COMMENT '自我介紹。需求未標非必要故為 NOT NULL，給空字串預設避免註冊時強制填寫',
 
@@ -36,8 +35,8 @@ CREATE TABLE `user` (
     UNIQUE KEY uk_user_phone (phone),
 
     -- CHAR(10) 只擋「超長」，不擋「過短」：'0912' 會被原樣存入而不報錯。
-    -- 必須額外加 CHECK 才能真正在 DB 層強制恰好 10 碼（AC-10）。
-    -- 僅驗長度，不驗開頭數字與國別碼（SCOPE-BOUNDARY.md owner 裁決）。
+    -- 必須額外加 CHECK 才能真正在 DB 層強制恰好 10 碼。
+    -- 僅驗長度，不驗開頭數字與國別碼。
     CONSTRAINT chk_user_phone_length CHECK (CHAR_LENGTH(phone) = 10)
 ) ENGINE = InnoDB
   DEFAULT CHARSET = utf8mb4
@@ -51,14 +50,14 @@ CREATE TABLE `user` (
 CREATE TABLE `post` (
     post_id    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT               COMMENT '發文 ID',
     user_id    BIGINT UNSIGNED NOT NULL                              COMMENT '發文者，FK to user',
-    content    VARCHAR(2000)   NOT NULL                              COMMENT '發佈文章內容。長度上限依 ADR-005',
+    content    VARCHAR(2000)   NOT NULL                              COMMENT '發佈文章內容。長度上限依 ',
     image      VARCHAR(255)        NULL DEFAULT NULL                 COMMENT '圖片路徑。需求標示為非必要欄位',
-    created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP    COMMENT '發佈時間，由 DB 層產生（AC-14）',
-    is_deleted BOOLEAN         NOT NULL DEFAULT FALSE                COMMENT '軟刪除旗標（ADR-004）。需求未列，依「不限制僅能有以下」新增',
+    created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP    COMMENT '發佈時間，由 DB 層產生',
+    is_deleted BOOLEAN         NOT NULL DEFAULT FALSE                COMMENT '軟刪除旗標。需求未列，依「不限制僅能有以下」新增',
 
     PRIMARY KEY (post_id),
 
-    -- 「列出所有發文」是最高頻查詢（AC-15），必帶 is_deleted = FALSE 過濾。
+    -- 「列出所有發文」是最高頻查詢，必帶 is_deleted = FALSE 過濾。
     -- sp_post_list 的完整形狀：
     --
     --     WHERE p.is_deleted = FALSE
@@ -92,9 +91,9 @@ CREATE TABLE `comment` (
     comment_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT               COMMENT '留言 ID',
     user_id    BIGINT UNSIGNED NOT NULL                              COMMENT '留言者，FK to user',
     post_id    BIGINT UNSIGNED NOT NULL                              COMMENT '所屬發文，FK to post',
-    content    VARCHAR(500)    NOT NULL                              COMMENT '留言內容。長度上限依 ADR-005',
-    created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP    COMMENT '留言時間，由 DB 層產生（AC-14）',
-    is_deleted BOOLEAN         NOT NULL DEFAULT FALSE                COMMENT '軟刪除旗標（ADR-004）。刪除發文時由 sp_post_delete 連動標記',
+    content    VARCHAR(500)    NOT NULL                              COMMENT '留言內容。長度上限依 ',
+    created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP    COMMENT '留言時間，由 DB 層產生',
+    is_deleted BOOLEAN         NOT NULL DEFAULT FALSE                COMMENT '軟刪除旗標。刪除發文時由 sp_post_delete 連動標記',
 
     PRIMARY KEY (comment_id),
 

@@ -53,7 +53,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 登入失敗（需求 §2）。
+     * 登入失敗。
      *
      * <p>回 401 Unauthorized 而非 403 Forbidden——RFC 9110 §15.5.2 定義 401 為
      * 「缺少或無效的驗證憑證」，403 為「身分已知但無權限」。登入失敗屬前者。

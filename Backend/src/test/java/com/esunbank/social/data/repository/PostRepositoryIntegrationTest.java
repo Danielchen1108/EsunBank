@@ -16,7 +16,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import com.esunbank.social.data.repository.PostRepository.PostRow;
 
 /**
- * 發文資料層對真實 MySQL 的整合測試（F004 AC-9、AC-10、AC-11）。
+ * 發文資料層對真實 MySQL 的整合測試。
  *
  * <p><b>為何需要真的連資料庫：</b>本測試要驗證的行為全部發生在 Stored Procedure 內部——
  * 軟刪除的讀取過濾、跨表連動標記、交易回滾。以 mock 取代資料層只會驗證到 mock 自己的設定，
@@ -34,7 +34,7 @@ import com.esunbank.social.data.repository.PostRepository.PostRow;
  *
  * <p><b>驗證用的直接 SQL：</b>斷言 {@code is_deleted} 狀態時刻意繞過 Stored Procedure 直接查詢。
  * 若改用受測的 SP 來驗證 SP 自己的效果，測試與實作會一起錯而測不出來。
- * 此處的 SQL 僅存在於測試，不違反「資料層不得寫 SQL」的約束（需求 §6）。
+ * 此處的 SQL 僅存在於測試，不違反「資料層不得寫 SQL」的約束。
  */
 @SpringBootTest(
         properties = {
@@ -65,8 +65,8 @@ class PostRepositoryIntegrationTest {
     /**
      * 以指定 created_at 寫入發文，僅供排序測試佈置。
      *
-     * <p>刻意繞過 {@code sp_post_create}：該 SP 不開放指定時間，發佈時間一律由 DB 層產生
-     * （AC-14）。要驗證排序就必須造出可控的時間差，這是唯一的辦法。
+     * <p>刻意繞過 {@code sp_post_create}：該 SP 不開放指定時間，發佈時間一律由 DB 層產生。
+     * 要驗證排序就必須造出可控的時間差，這是唯一的辦法。
      */
     private Long insertPostAt(String content, String createdAt) {
         jdbcTemplate.update(
@@ -87,7 +87,7 @@ class PostRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("新增發文：sp_post_create 回傳新 post_id，內容與作者正確（AC-1、AC-6、AC-10）")
+    @DisplayName("新增發文：sp_post_create 回傳新 post_id，內容與作者正確")
     void createsPost() {
         Long postId = postRepository.create(SEED_USER_ID, "整合測試發文 🎯");
 
@@ -102,7 +102,7 @@ class PostRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("列出所有發文：sp_post_list 帶 is_deleted = FALSE，已刪除的不出現（AC-3、ADR-004）")
+    @DisplayName("列出所有發文：sp_post_list 帶 is_deleted = FALSE，已刪除的不出現")
     void listExcludesSoftDeletedPosts() {
         Long visibleId = postRepository.create(SEED_USER_ID, "這篇看得見");
         Long deletedId = postRepository.create(SEED_USER_ID, "這篇會被刪除");
@@ -115,7 +115,7 @@ class PostRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("列出所有發文：由新到舊排序（D-14）——排序寫在 sp_post_list，不在應用層")
+    @DisplayName("列出所有發文：由新到舊排序——排序寫在 sp_post_list，不在應用層")
     void listOrdersPostsNewestFirst() {
         // 刻意讓插入順序與時間順序相反：SP 若漏了 ORDER BY，
         // 回傳會是插入順序，斷言就會失敗。
@@ -144,7 +144,7 @@ class PostRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("取單筆發文：已軟刪除者查不到（ADR-004 讀取過濾）")
+    @DisplayName("取單筆發文：已軟刪除者查不到")
     void findByIdExcludesSoftDeletedPost() {
         Long postId = postRepository.create(SEED_USER_ID, "即將被刪除");
         postRepository.softDelete(postId);
@@ -153,7 +153,7 @@ class PostRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("編輯發文：內容確實更新（AC-4）")
+    @DisplayName("編輯發文：內容確實更新")
     void updatesPostContent() {
         Long postId = postRepository.create(SEED_USER_ID, "原始內容");
 
@@ -163,7 +163,7 @@ class PostRepositoryIntegrationTest {
         assertThat(postRepository.findById(postId))
                 .get()
                 .satisfies(p -> assertThat(p.content()).isEqualTo("修改後內容"));
-        // image 不由 API 提供（欄位保留於 schema 但無上傳功能，SCOPE-BOUNDARY.md R-3），
+        // image 不由 API 提供（欄位保留於 schema 但無上傳功能，R-3），
         // 資料層固定綁 NULL；sp_post_update 為整體取代語意，故編輯後該欄為 NULL。
         assertThat(jdbcTemplate.queryForObject(
                 "SELECT image FROM `post` WHERE post_id = ?", String.class, postId)).isNull();
@@ -184,7 +184,7 @@ class PostRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("刪除發文：同一交易內連動軟刪除其留言，且發文不再出現於列表（AC-5、AC-11）")
+    @DisplayName("刪除發文：同一交易內連動軟刪除其留言，且發文不再出現於列表")
     void deleteSoftDeletesPostAndItsCommentsInOneTransaction() {
         Long postId = insertPostWithComment("這篇連同留言一起被軟刪除");
 
@@ -194,10 +194,10 @@ class PostRepositoryIntegrationTest {
         int affected = postRepository.softDelete(postId);
 
         assertThat(affected).isEqualTo(1);
-        // 需求 §6：跨表異動須為原子操作——post 與 comment 必須同時標記
+        // 需求：跨表異動須為原子操作——post 與 comment 必須同時標記
         assertThat(postDeletedFlag(postId)).isEqualTo(1);
         assertThat(commentDeletedFlags(postId)).containsExactly(1);
-        // ADR-004 最常見的缺陷：讀取漏帶過濾條件，已刪除的內容重新出現
+        // 最常見的缺陷：讀取漏帶過濾條件，已刪除的內容重新出現
         assertThat(postRepository.findAll()).extracting(PostRow::postId).doesNotContain(postId);
         assertThat(postRepository.findById(postId)).isEmpty();
     }
@@ -212,17 +212,17 @@ class PostRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("刪除發文失敗時整筆回滾——post 不會停留在「已刪除但留言未刪」的錯亂狀態（AC-11）")
+    @DisplayName("刪除發文失敗時整筆回滾——post 不會停留在「已刪除但留言未刪」的錯亂狀態")
     void deleteRollsBackWhenCommentUpdateFails() {
         Long postId = insertPostWithComment("驗證交易回滾");
 
         // 以 trigger 讓 comment 的 UPDATE 必定失敗。sp_post_delete 先更新 post 再更新 comment，
-        // 若沒有交易，post 會停在 is_deleted = 1 而留言未動——正是需求 §6 所述的資料錯亂。
+        // 若沒有交易，post 會停在 is_deleted = 1 而留言未動——正是需求所述的資料錯亂。
         jdbcTemplate.execute("""
                 CREATE TRIGGER trg_f004_fail_comment_update
                 BEFORE UPDATE ON `comment`
                 FOR EACH ROW
-                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'F004 rollback test'
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'rollback test'
                 """);
         try {
             assertThatThrownBy(() -> postRepository.softDelete(postId))
@@ -239,7 +239,7 @@ class PostRepositoryIntegrationTest {
     }
 
     @Test
-    @DisplayName("SQL Injection 字串以純文字寫入，資料表完好（AC-9）")
+    @DisplayName("SQL Injection 字串以純文字寫入，資料表完好")
     void treatsInjectionPayloadAsPlainText() {
         String payload = "'); DROP TABLE `post`; --";
 

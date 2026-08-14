@@ -14,7 +14,7 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 
 /**
- * 登入請求的欄位驗證（F003 AC-1）。
+ * 登入請求的欄位驗證。
  *
  * <p><b>刻意只驗必填</b>：登入不重複註冊的格式規則。手機號碼長度不符者必然查無此帳號，
  * 由既有的登入失敗路徑處理即可；在此另設長度規則只會讓「格式錯誤」與「帳密錯誤」
@@ -58,7 +58,7 @@ class LoginRequestValidationTest {
     }
 
     @Test
-    @DisplayName("不驗證密碼強度——需求未定義（SCOPE-BOUNDARY.md R-3）")
+    @DisplayName("不驗證密碼強度——需求未定義")
     void doesNotValidatePasswordStrength() {
         assertThat(violationsOf(new LoginRequest("0912345678", "a"))).isEmpty();
     }

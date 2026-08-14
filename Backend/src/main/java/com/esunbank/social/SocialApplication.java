@@ -6,9 +6,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 /**
  * 社群媒體系統 — 應用程式進入點。
  *
- * <p>Application Server 進入點（需求 §5 三層式架構）。
+ * <p>Application Server 進入點（三層式架構）。
  *
- * <p>後端依需求 §5 分為四層，各層職責見對應套件的 {@code package-info.java}：
+ * <p>後端分為四層，各層職責見對應套件的 {@code package-info.java}：
  * <ul>
  *   <li>{@code presentation} — 展示層</li>
  *   <li>{@code business} — 業務層</li>

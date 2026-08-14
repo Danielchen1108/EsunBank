@@ -1,17 +1,17 @@
 /**
  * 資料層（Data Layer）。
  *
- * <p>對應需求 §5 的分層設計：展示層、業務層、資料層、共用層。
+ * <p>的分層設計：展示層、業務層、資料層、共用層。
  *
  * <p>職責：
  * <ul>
- *   <li>透過 Stored Procedure 存取資料庫（需求 §6）</li>
+ *   <li>透過 Stored Procedure 存取資料庫</li>
  *   <li>資料列與領域模型之間的映射</li>
  * </ul>
  *
  * <p><b>重要限制：</b>本層不得直接撰寫 SQL 字串。所有資料庫存取一律呼叫
  * {@code DB/02_DDL_stored_procedures.sql} 中定義的 Stored Procedure，
- * 並以 {@code CallableStatement} 綁定參數，不得字串拼接（需求 §6 防 SQL Injection）。
+ * 並以 {@code CallableStatement} 綁定參數，不得字串拼接（防 SQL Injection）。
  *
  * <p>設計說明：因需求要求透過 Stored Procedure 存取，本專案使用 Spring JDBC
  * （{@code JdbcTemplate} + {@code CallableStatement}）而非 JPA。

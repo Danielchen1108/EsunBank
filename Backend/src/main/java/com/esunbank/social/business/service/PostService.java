@@ -12,22 +12,22 @@ import com.esunbank.social.data.repository.PostRepository;
 /**
  * 發文業務邏輯（業務層）。
  *
- * <p>對應需求 §3 發文功能：新增、列出所有、編輯、刪除。
+ * <p>發文功能：新增、列出所有、編輯、刪除。
  *
- * <p><b>編輯與刪除不檢查發文者身分（{@code F004-REQ.md} § BG-4 裁決）：</b>
- * 需求 §2 原文「確保只有登入的使用者可以<b>發文或留言</b>」，字面上未涵蓋編輯與刪除，
- * owner 依「沒寫就不用」明示裁決不實作，並接受「任何登入使用者可編輯或刪除他人發文」的風險。
+ * <p><b>編輯與刪除不檢查發文者身分：</b>
+ * 需求原文「確保只有登入的使用者可以<b>發文或留言</b>」，字面上未涵蓋編輯與刪除，
+ * 需求方依「沒寫就不用」明示決定不實作，並接受「任何登入使用者可編輯或刪除他人發文」的風險。
  * <b>這是刻意決策，不是遺漏</b>——{@link #update} 與 {@link #delete} 因此不接受操作者身分。
  *
  * <p><b>未使用 {@code @Transactional}：</b>唯一的跨表寫入（刪除發文連動留言）之交易
- * 寫在 {@code sp_post_delete} 內（ADR-004）。SP 自帶 {@code START TRANSACTION}，
+ * 寫在 {@code sp_post_delete} 內。SP 自帶 {@code START TRANSACTION}，
  * 若本層再以 {@code @Transactional} 包一層，MySQL 會在進入 SP 時隱式提交外層交易，
  * 使交易邊界不清且回滾範圍與預期不符。新增與編輯則本就是單表操作，不需要交易。
  *
- * <p><b>為何由本服務注入 {@link CommentRepository}（D-13）：</b>
+ * <p><b>為何由本服務注入 {@link CommentRepository}：</b>
  * 發文列表需帶出留言，而 {@code business/package-info.java} 明訂業務層「僅能呼叫 data 層」——
  * 改呼叫 {@code CommentService} 會形成業務層互相呼叫，牴觸該宣告。
- * 留言的讀取邏輯歸屬 F004 亦符合 {@code F005-REQ.md} 早已寫明的分工。
+ * 留言的讀取邏輯歸屬 亦符合 早已寫明的分工。
  */
 @Service
 public class PostService {
@@ -41,7 +41,7 @@ public class PostService {
     }
 
     /**
-     * 新增發文（AC-1）。
+     * 新增發文。
      *
      * @return 新增的 post_id
      */
@@ -50,17 +50,17 @@ public class PostService {
     }
 
     /**
-     * 列出所有未刪除的發文（AC-3）。
+     * 列出所有未刪除的發文。
      *
-     * <p>過濾條件 {@code is_deleted = FALSE} 在 {@code sp_post_list} 內（ADR-004），
+     * <p>過濾條件 {@code is_deleted = FALSE} 在 {@code sp_post_list} 內，
      * 本層不再重複過濾——條件只該存在於一處，兩處各寫一份反而容易不同步。
      *
-     * <p><b>一併帶出留言（D-13）：</b>兩支 SP 各取一份資料，再依 {@code postId} 於記憶體分組——
+     * <p><b>一併帶出留言：</b>兩支 SP 各取一份資料，再依 {@code postId} 於記憶體分組——
      * 固定兩次資料庫往返，不因發文數增加而變多（逐篇查留言就是 N+1）。
      * 沒有留言的發文得到空 List 而非 null（見 {@link Post#comments()}）。
      *
      * <p>留言的順序由 {@code sp_comment_list_visible} 決定（依時間、以 comment_id 決勝），
-     * 分組時原樣保留；發文本身的排序與分頁仍不實作（`SCOPE-BOUNDARY.md` Out of Scope）。
+     * 分組時原樣保留；發文本身的排序與分頁仍不實作。
      */
     public List<Post> listAll() {
         Map<Long, List<Comment>> commentsByPostId = commentsByPostId();
@@ -71,16 +71,16 @@ public class PostService {
     }
 
     /**
-     * 編輯發文（AC-4）。
+     * 編輯發文。
      *
      * <p>先以 {@code sp_post_find_by_id} 確認目標存在且未被軟刪除，再更新——
-     * 這是 ADR-004 明列的負面後果防範：不先檢查就會編輯到已刪除的內容。
+     * 這是 明列的負面後果防範：不先檢查就會編輯到已刪除的內容。
      *
      * <p><b>不以 UPDATE 的影響列數判斷存在性：</b>MySQL 的 {@code ROW_COUNT()} 回報實際變更的
      * 列數，送出與原文相同的內容時為 0。若據此回 404，重送相同內容的編輯會被誤判為找不到。
      *
      * <p><b>回應必須帶上該篇原有的留言：</b>編輯只異動 content，留言不受影響。
-     * 若回傳時漏掉 comments，前端以回應覆蓋卡片後，該篇的留言會在畫面上憑空消失（D-13）。
+     * 若回傳時漏掉 comments，前端以回應覆蓋卡片後，該篇的留言會在畫面上憑空消失。
      * {@code sp_post_find_by_id} 不回留言，故另行取一次。
      *
      * <p>此處取的是<b>全部</b>可見留言再挑出這一篇的——沒有「只取單篇留言」的 SP。
@@ -108,10 +108,10 @@ public class PostService {
     }
 
     /**
-     * 刪除發文（AC-5、AC-11）。
+     * 刪除發文。
      *
-     * <p>軟刪除：{@code sp_post_delete} 於同一交易內同時標記發文與其留言（ADR-004），
-     * 為需求 §6「需同時異動多個資料表時，請實作 Transaction」的唯一落地點。
+     * <p>軟刪除：{@code sp_post_delete} 於同一交易內同時標記發文與其留言，
+     * 為需求「需同時異動多個資料表時，請實作 Transaction」的唯一落地點。
      *
      * <p>此處可用影響列數判斷存在性：{@code is_deleted} 由 FALSE 改為 TRUE 必然造成變更，
      * 回 0 即代表發文不存在或先前已被刪除——與編輯的情況不同。

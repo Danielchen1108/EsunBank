@@ -53,7 +53,7 @@
 		</dependency>
 
 		<!--
-			JWT（ADR-003：登入驗證採 Spring Security + JWT）。
+			JWT（登入驗證採 Spring Security + JWT）。
 
 			jjwt 刻意拆成三個 artifact：
 			  jjwt-api     — 編譯期唯一可見的介面，程式碼只依賴這一個

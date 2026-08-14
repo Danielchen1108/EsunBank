@@ -29,12 +29,12 @@ import com.esunbank.social.common.exception.CommentTargetPostNotFoundException;
 import com.esunbank.social.common.security.AuthenticatedUser;
 
 /**
- * 新增留言端點（F005 AC-1、AC-3、AC-4）。
+ * 新增留言端點。
  *
- * <p><b>為何 {@code addFilters = false}：</b>F003 的 JWT 過濾鏈與本功能並行開發，
+ * <p><b>為何 {@code addFilters = false}：</b>的 JWT 過濾鏈與本功能並行開發，
  * 本測試不應依賴其完成度。改以 principal 直接注入，驗證控制器如何「使用」已驗證身分；
- * 「未登入被擋下」（AC-2）由 {@code SecurityConfig} 的 deny-by-default 負責，
- * 於 F003 的測試與端到端驗證涵蓋，見 {@code F005-API.md} § 驗證。
+ * 「未登入被擋下」由 {@code SecurityConfig} 的 deny-by-default 負責，
+ * 由過濾鏈自身的測試與端到端驗證涵蓋。
  */
 @WebMvcTest(CommentController.class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -49,7 +49,7 @@ class CommentControllerTest {
     private static final AuthenticatedUser CURRENT_USER = new AuthenticatedUser(7L, "0912345678");
 
     /**
-     * 模擬 F003 過濾鏈驗證成功後放入 {@code SecurityContext} 的 principal。
+     * 模擬 過濾鏈驗證成功後放入 {@code SecurityContext} 的 principal。
      *
      * <p>{@code addFilters = false} 跳過的正是會填入 {@code SecurityContext} 的過濾器，
      * 因此必須自行放入，否則 {@code @AuthenticationPrincipal} 解析出的是 null。
@@ -112,7 +112,7 @@ class CommentControllerTest {
     }
 
     @Test
-    @DisplayName("留言內容超過 500 字回 400（ADR-005）")
+    @DisplayName("留言內容超過 500 字回 400")
     void rejectsTooLongContent() throws Exception {
         mockMvc.perform(post("/api/posts/3/comments")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -164,7 +164,7 @@ class CommentControllerTest {
                 .andExpect(status().isCreated());
 
         // XSS 的防護位置在輸出端（Vue 插值自動跳脫），不在寫入端改寫使用者資料。
-        // 見 F005-API.md § 安全考量。
+        // 見 安全考量。
         var captor = org.mockito.ArgumentCaptor.forClass(CommentCreateCommand.class);
         verify(commentService).create(captor.capture());
         assertThat(captor.getValue().content()).isEqualTo(hostile);

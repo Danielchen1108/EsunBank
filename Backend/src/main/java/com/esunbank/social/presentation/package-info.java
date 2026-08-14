@@ -1,11 +1,11 @@
 /**
  * 展示層（Presentation Layer）。
  *
- * <p>對應需求 §5 的分層設計：展示層、業務層、資料層、共用層。
+ * <p>的分層設計：展示層、業務層、資料層、共用層。
  *
  * <p>職責：
  * <ul>
- *   <li>接收 HTTP 請求，回傳 RESTful 回應（需求 §6）</li>
+ *   <li>接收 HTTP 請求，回傳 RESTful 回應</li>
  *   <li>請求參數驗證（Bean Validation）</li>
  *   <li>DTO 與領域模型之間的轉換</li>
  * </ul>
