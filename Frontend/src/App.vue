@@ -1,4 +1,7 @@
 <script setup>
+import { useRouter } from 'vue-router'
+import { authState, logout } from './api/client.js'
+
 /**
  * 應用程式外框。
  *
@@ -8,10 +11,34 @@
  * **刻意不畫山形剪影**——玉山銀行的商標本身即為山形，重製他人註冊商標並不恰當；
  * 等高線屬地圖語彙，與該商標明確區隔。
  *
- * 頁面切換的淡入淡出使用 Vue 內建的 <Transition>，未引入任何動畫套件：
+ * 動態一律使用 Vue 內建的 <Transition> 與 CSS，未引入任何動畫套件：
  * 每個新依賴都是一份要評估的第三方程式碼，而會直接操作 DOM 的動畫庫
  * 更可能牴觸本案唯一的 XSS 防線（一律以 {{ }} 插值輸出、不使用 v-html）。
+ *
+ * ── 為什麼頁面切換沒有過場動畫 ─────────────────────────────
+ * 曾在 <RouterView> 外包一層淡入淡出，實測後移除。
+ *
+ * Vue 的 Transition 靠 requestAnimationFrame 移除 enter-from class；
+ * 分頁在背景時 rAF 被瀏覽器節流，class 不會被移除，
+ * 整個頁面就停在 opacity: 0——**使用者以新分頁開啟連結，看到的是一片空白**。
+ *
+ * 根本問題在於：整頁淡入等於「頁面預設不可見，靠 JS 讓它可見」。
+ * 一個 240ms 的過場不值得用「可能全白」當代價。
+ * 內容的可見性不應該是任何動畫的副產物。
+ *
+ * 列表動畫（TransitionGroup）保留：它動的是已經可見的頁面裡的單一項目，
+ * 即使動畫沒跑完，最壞情況也只是該項目沒有動畫，而不是整頁消失。
+ *
+ * 導覽列依登入狀態切換：未登入時只給註冊與登入兩條路，
+ * 已登入時顯示目前身分與登出。**選單不是權限控制**——真正的把關在後端，
+ * 這裡只是不讓使用者看到對他無效的選項。
  */
+const router = useRouter()
+
+function onLogout() {
+  logout()
+  router.replace({ name: 'login' })
+}
 </script>
 
 <template>
@@ -44,20 +71,23 @@
       </RouterLink>
 
       <nav>
-        <RouterLink to="/register">註冊</RouterLink>
-        <RouterLink to="/login">登入</RouterLink>
-        <!-- 未登入也顯示：能不能看由後端回 401 決定，前端不自行判斷權限 -->
-        <RouterLink to="/posts">發文</RouterLink>
-        <RouterLink to="/health">連線狀態</RouterLink>
+        <template v-if="authState.loggedIn">
+          <RouterLink to="/posts">發文</RouterLink>
+          <RouterLink to="/health">連線狀態</RouterLink>
+          <span class="who" :title="authState.userName">{{ authState.userName }}</span>
+          <button type="button" class="link" @click="onLogout">登出</button>
+        </template>
+
+        <template v-else>
+          <RouterLink to="/login">登入</RouterLink>
+          <RouterLink to="/register">註冊</RouterLink>
+          <RouterLink to="/health">連線狀態</RouterLink>
+        </template>
       </nav>
     </div>
   </header>
 
-  <RouterView v-slot="{ Component }">
-    <Transition name="fade" mode="out-in">
-      <component :is="Component" />
-    </Transition>
-  </RouterView>
+  <RouterView />
 </template>
 
 <style scoped>
@@ -142,6 +172,35 @@ nav a.router-link-active {
 
 nav a.router-link-active::after {
   transform: scaleX(1);
+}
+
+/* 目前登入者：與導覽連結以一道細分隔線區隔，這不是可以點的選項 */
+.who {
+  max-width: 9rem;
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--stone-200);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--jade-950);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 登出是動作不是導覽，但視覺上屬於這一列，故做成連結的樣子 */
+button.link {
+  padding: 0.15rem 0;
+  border: 0;
+  background: none;
+  font-size: 0.9rem;
+  font-weight: 400;
+  color: var(--stone-400);
+  transition: color var(--dur) var(--ease);
+}
+
+button.link:hover {
+  background: none;
+  color: var(--clay-600);
 }
 
 @media (max-width: 34rem) {

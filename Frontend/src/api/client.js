@@ -7,6 +7,8 @@
  * 路徑一律以 /api 開頭，由 vite.config.js 的 proxy 轉發至 Application Server。
  */
 
+import { ref } from 'vue'
+
 /** 帶有 HTTP 狀態與回應內容的錯誤，供呼叫端區分 400／401／409 等情境。 */
 export class ApiError extends Error {
   constructor(status, body) {
@@ -29,6 +31,29 @@ export class ApiError extends Error {
  */
 const TOKEN_KEY = 'esunbank.social.token'
 
+/**
+ * 目前登入者的顯示名稱。
+ *
+ * 與憑證分開存放：token 是給後端看的，這個是給畫面看的。
+ * 不從 JWT 解出來——那會讓前端依賴憑證的內部格式，
+ * 換簽章方式或調整 claim 就會壞掉。登入回應直接給名稱，來源明確。
+ */
+const USER_NAME_KEY = 'esunbank.social.userName'
+
+/**
+ * 登入狀態的響應式來源。
+ *
+ * localStorage 讀取不是響應式的——導覽列無法得知「剛剛登出了」。
+ * 以一個 ref 作為單一事實來源，login()／logout() 負責同步，
+ * 畫面只讀這裡，不各自去翻 localStorage。
+ *
+ * 初值取自 localStorage：重新整理後仍要記得使用者是誰。
+ */
+export const authState = ref({
+  loggedIn: localStorage.getItem(TOKEN_KEY) !== null,
+  userName: localStorage.getItem(USER_NAME_KEY),
+})
+
 /** 目前的登入憑證；未登入時為 null。 */
 export function authToken() {
   return localStorage.getItem(TOKEN_KEY)
@@ -37,6 +62,28 @@ export function authToken() {
 /** 是否已登入——供畫面判斷要顯示登入表單還是已登入狀態。 */
 export function isLoggedIn() {
   return authToken() !== null
+}
+
+/** 目前登入者的顯示名稱；未登入時為 null。 */
+export function currentUserName() {
+  return localStorage.getItem(USER_NAME_KEY)
+}
+
+/**
+ * 登出。
+ *
+ * **題目未要求登出功能**（§1–§4 只有註冊、登入、發文、留言），
+ * 為了讓登入流程有出口而追加——有閘門卻沒有出口，使用者只能靠清除瀏覽器資料脫身。
+ * 記於 SCOPE-BOUNDARY.md 的「Owner 追加」。
+ *
+ * 純前端動作：後端刻意不實作憑證有效期與撤銷（ADR-003），
+ * 所以這裡只是丟掉本機憑證，不是讓伺服器端失效。**這個限制必須誠實看待**——
+ * 憑證若在登出前外流，刪掉本機副本並不能讓它失效。
+ */
+export function logout() {
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(USER_NAME_KEY)
+  authState.value = { loggedIn: false, userName: null }
 }
 
 /**
@@ -99,15 +146,20 @@ export function register(payload) {
  * 的判定原則 R-3 不實作。
  *
  * @param {{phone: string, password: string}} payload
- * @returns {Promise<{userId: number, token: string}>}
+ * @returns {Promise<{userId: number, userName: string, token: string}>}
  */
 export async function login(payload) {
+  // 換帳號登入前先清掉舊憑證，避免登入失敗時畫面仍顯示上一個人的身分
+  logout()
+
   const result = await request('/api/auth/login', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
 
   localStorage.setItem(TOKEN_KEY, result.token)
+  localStorage.setItem(USER_NAME_KEY, result.userName)
+  authState.value = { loggedIn: true, userName: result.userName }
 
   return result
 }

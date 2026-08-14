@@ -48,7 +48,7 @@ class AuthControllerLoginTest {
     @DisplayName("登入成功回 200 與憑證")
     void logsInSuccessfully() throws Exception {
         when(userService.login(any(LoginCommand.class)))
-                .thenReturn(new LoginResult(7L, "issued.jwt.token"));
+                .thenReturn(new LoginResult(7L, "陳大文", "issued.jwt.token"));
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -62,7 +62,7 @@ class AuthControllerLoginTest {
     @DisplayName("登入端點免驗證——未帶憑證仍可存取，不應回 401")
     void loginEndpointIsPublic() throws Exception {
         when(userService.login(any(LoginCommand.class)))
-                .thenReturn(new LoginResult(7L, "issued.jwt.token"));
+                .thenReturn(new LoginResult(7L, "陳大文", "issued.jwt.token"));
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

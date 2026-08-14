@@ -9,5 +9,5 @@ package com.esunbank.social.business.service;
  * @param userId 登入成功的使用者 ID
  * @param token  JWT 憑證。後續請求以 {@code Authorization: Bearer <token>} 帶回
  */
-public record LoginResult(Long userId, String token) {
+public record LoginResult(Long userId, String userName, String token) {
 }

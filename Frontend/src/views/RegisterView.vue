@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { register } from '../api/client.js'
 
 /**
@@ -15,6 +16,8 @@ const form = reactive({
   password: '',
   biography: '',
 })
+
+const router = useRouter()
 
 const fieldErrors = ref({})
 const generalError = ref('')
@@ -33,6 +36,12 @@ async function onSubmit() {
   try {
     const result = await register({ ...form })
     successUserId.value = result.userId
+
+    // 註冊不自動登入（題目未要求，F002-REQ.md Non-goals），
+    // 但也不該把人留在原地自己找路。帶手機號碼過去，登入頁不必重打。
+    setTimeout(() => {
+      router.replace({ name: 'login', query: { phone: form.phone } })
+    }, 1400)
   } catch (e) {
     if (e.status === 400 && e.body?.errors) {
       fieldErrors.value = e.body.errors
@@ -50,6 +59,7 @@ async function onSubmit() {
 <template>
   <section>
     <h1>註冊</h1>
+    <p class="lede">以手機號碼建立帳號，註冊後即可登入發文與留言。</p>
 
     <form novalidate @submit.prevent="onSubmit">
       <label>
@@ -90,8 +100,12 @@ async function onSubmit() {
 
     <p v-if="generalError" class="error banner">{{ generalError }}</p>
 
-    <p v-if="successUserId" class="success banner">
-      註冊成功，使用者編號 {{ successUserId }}。
+    <p v-if="successUserId" class="success banner" role="status">
+      註冊成功，使用者編號 {{ successUserId }}。正在帶你去登入…
+    </p>
+
+    <p v-else class="switch">
+      已經有帳號了？<RouterLink to="/login">直接登入</RouterLink>
     </p>
   </section>
 </template>
@@ -183,6 +197,25 @@ small {
 
 .banner.success {
   background: var(--jade-100);
+}
+
+.switch {
+  max-width: 26rem;
+  margin-top: 1.25rem;
+  font-size: 0.88rem;
+  color: var(--stone-400);
+}
+
+.switch a {
+  color: var(--jade-700);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.switch a:hover {
+  border-bottom-color: var(--jade-700);
 }
 
 @media (max-width: 34rem) {

@@ -89,6 +89,7 @@ public class UserRepository {
                             return Optional.of(new UserCredentials(
                                     resultSet.getLong("user_id"),
                                     resultSet.getString("phone"),
+                                    resultSet.getString("user_name"),
                                     resultSet.getString("password")));
                         }
                     }
@@ -103,9 +104,12 @@ public class UserRepository {
      * 與其一同閱讀較清楚。**不可上移至業務層**——資料層不得反向依賴業務層
      * （見 {@code data/package-info.java} 的依賴方向限制）。
      *
+     * <p>{@code userName} 並非比對所需，而是登入成功後要回給前端顯示「目前登入者」用。
+     * {@code sp_user_find_by_phone} 本來就會選出這一欄，多帶回來不需額外查詢。
+     *
      * @param passwordHash BCrypt 雜湊值。單向不可還原，只能以
      *                     {@code PasswordEncoder.matches()} 比對
      */
-    public record UserCredentials(Long userId, String phone, String passwordHash) {
+    public record UserCredentials(Long userId, String phone, String userName, String passwordHash) {
     }
 }

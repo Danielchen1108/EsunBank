@@ -88,6 +88,6 @@ public class UserService {
         String token = jwtTokenService.issue(
                 new AuthenticatedUser(credentials.userId(), credentials.phone()));
 
-        return new LoginResult(credentials.userId(), token);
+        return new LoginResult(credentials.userId(), credentials.userName(), token);
     }
 }

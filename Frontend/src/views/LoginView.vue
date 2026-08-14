@@ -1,38 +1,47 @@
 <script setup>
 import { reactive, ref } from 'vue'
-import { isLoggedIn, login } from '../api/client.js'
+import { useRoute, useRouter } from 'vue-router'
+import { login } from '../api/client.js'
 
 /**
  * 登入畫面（題目 §2）。
  *
- * 登入後前端只保存憑證，不保存密碼——密碼在送出後即不再留存於任何地方。
+ * 登入後前端只保存憑證與顯示名稱，不保存密碼——密碼送出後不再留存於任何地方。
  *
- * 沒有登出按鈕、沒有「記住我」：題目未提及，依 SCOPE-BOUNDARY.md R-3 不實作。
+ * 登入成功即導向使用者原本要去的頁面（由路由守衛寫在 ?redirect），
+ * 沒有指定時回發文牆。**不讓使用者自己找路**：他點「發文」被帶來這裡，
+ * 登入完就該回到發文，而不是停在一則「登入成功」的訊息上。
+ *
+ * 沒有「記住我」：題目未提及，依 SCOPE-BOUNDARY.md R-3 不實作。
  */
+const router = useRouter()
+const route = useRoute()
+// 從註冊頁帶過來的手機號碼——剛註冊完的人不必再打一次
 const form = reactive({
-  phone: '',
+  phone: typeof route.query.phone === 'string' ? route.query.phone : '',
   password: '',
 })
 
 const fieldErrors = ref({})
 const generalError = ref('')
-const loggedInUserId = ref(null)
 const submitting = ref(false)
 
-// 進入畫面時若已有憑證，直接反映狀態，避免使用者重複登入
-const alreadyLoggedIn = ref(isLoggedIn())
+// 已登入者不會走到這個畫面——路由守衛會先把他導向發文牆
 
 async function onSubmit() {
   fieldErrors.value = {}
   generalError.value = ''
-  loggedInUserId.value = null
   submitting.value = true
 
   try {
-    const result = await login({ ...form })
-    loggedInUserId.value = result.userId
-    alreadyLoggedIn.value = true
+    await login({ ...form })
     form.password = ''
+
+    // 回到使用者原本要去的地方；沒有指定時回發文牆。
+    // replace 而非 push：登入頁不該留在上一頁的歷史裡，
+    // 否則使用者按上一頁會回到一個已經登入、進不去的畫面。
+    const target = typeof route.query.redirect === 'string' ? route.query.redirect : '/posts'
+    await router.replace(target)
   } catch (e) {
     if (e.status === 400 && e.body?.errors) {
       fieldErrors.value = e.body.errors
@@ -51,6 +60,7 @@ async function onSubmit() {
 <template>
   <section>
     <h1>登入</h1>
+    <p class="lede">以註冊時使用的手機號碼登入。</p>
 
     <form novalidate @submit.prevent="onSubmit">
       <label>
@@ -70,14 +80,10 @@ async function onSubmit() {
       </button>
     </form>
 
-    <p v-if="generalError" class="error banner">{{ generalError }}</p>
+    <p v-if="generalError" class="error banner" role="alert">{{ generalError }}</p>
 
-    <p v-if="loggedInUserId" class="success banner">
-      登入成功，使用者編號 {{ loggedInUserId }}。
-    </p>
-
-    <p v-else-if="alreadyLoggedIn" class="hint banner">
-      目前為已登入狀態，可直接發文或留言。
+    <p class="switch">
+      還沒有帳號？<RouterLink to="/register">註冊一個</RouterLink>
     </p>
   </section>
 </template>
@@ -169,6 +175,25 @@ small {
 
 .banner.success {
   background: var(--jade-100);
+}
+
+.switch {
+  max-width: 26rem;
+  margin-top: 1.25rem;
+  font-size: 0.88rem;
+  color: var(--stone-400);
+}
+
+.switch a {
+  color: var(--jade-700);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur) var(--ease);
+}
+
+.switch a:hover {
+  border-bottom-color: var(--jade-700);
 }
 
 @media (max-width: 34rem) {

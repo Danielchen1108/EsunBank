@@ -69,6 +69,6 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         LoginResult result = userService.login(new LoginCommand(request.phone(), request.password()));
 
-        return ResponseEntity.ok(new LoginResponse(result.userId(), result.token()));
+        return ResponseEntity.ok(new LoginResponse(result.userId(), result.userName(), result.token()));
     }
 }

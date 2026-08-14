@@ -46,7 +46,7 @@ class UserServiceLoginTest {
 
     /** 資料庫中的既有帳號：明碼 Test1234，僅以雜湊值儲存。 */
     private UserRepository.UserCredentials storedUser() {
-        return new UserRepository.UserCredentials(7L, "0912345678", encoder.encode("Test1234"));
+        return new UserRepository.UserCredentials(7L, "0912345678", "陳大文", encoder.encode("Test1234"));
     }
 
     @Test

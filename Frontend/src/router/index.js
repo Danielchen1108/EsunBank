@@ -3,6 +3,7 @@ import RegisterView from '../views/RegisterView.vue'
 import LoginView from '../views/LoginView.vue'
 import PostsView from '../views/PostsView.vue'
 import HealthView from '../views/HealthView.vue'
+import { isLoggedIn } from '../api/client.js'
 
 /**
  * 路由設定。
@@ -10,20 +11,70 @@ import HealthView from '../views/HealthView.vue'
  * 題目未提及路由，但註冊、登入、發文為各自獨立的畫面（題目 §1–§4），
  * 屬明文功能的必要前提（SCOPE-BOUNDARY.md 判定原則 R-2）。
  *
- * 不設路由守衛：授權判定在後端（SecurityConfig 的過濾鏈），
- * 前端擋畫面只是體驗優化，且無法取代後端把關。
- * /posts 需要登入，但那由後端回 401 表態，PostsView 收到 401 後導向 /login——
- * 守衛擋得住畫面，擋不住直接呼叫 API 的人，不應被當成安全機制。
+ * ── 關於路由守衛 ─────────────────────────────────────────────
+ * 守衛**不是安全機制**，這點不會因為加了守衛而改變。真正的授權判定在後端
+ * SecurityConfig 的過濾鏈：手動輸入網址、繞過前端直接打 API，一律回 401。
+ *
+ * 守衛只做一件事——**在使用者撞牆之前先把他帶到對的地方**。
+ * 未登入者點「發文」，與其讓他看到空白畫面再被 401 踢回來，
+ * 不如直接帶到登入頁，並記住他原本要去哪，登入後送他過去。
+ *
+ * 因此守衛的判斷依據是「本機有沒有憑證」，而不是「憑證有沒有效」——
+ * 前端無從驗證簽章，也不該試。憑證過期或偽造由後端回 401，
+ * 前端在 API 層處理（見 PostsView 的 401 分支）。
  */
 const routes = [
-  { path: '/', redirect: '/register' },
-  { path: '/register', name: 'register', component: RegisterView },
-  { path: '/login', name: 'login', component: LoginView },
-  { path: '/posts', name: 'posts', component: PostsView },
-  { path: '/health', name: 'health', component: HealthView },
+  {
+    path: '/',
+    // 進站導向依登入狀態決定：已登入直接看內容，未登入先登入
+    redirect: () => (isLoggedIn() ? '/posts' : '/login'),
+  },
+  {
+    path: '/register',
+    name: 'register',
+    component: RegisterView,
+    meta: { guestOnly: true },
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: LoginView,
+    meta: { guestOnly: true },
+  },
+  {
+    path: '/posts',
+    name: 'posts',
+    component: PostsView,
+    meta: { requiresAuth: true },
+  },
+  {
+    // 連線狀態不需登入：它回報系統是否活著，不含任何使用者資料，
+    // 且後端也把 /api/health 放在白名單內，前後端一致
+    path: '/health',
+    name: 'health',
+    component: HealthView,
+  },
 ]
 
-export default createRouter({
+const router = createRouter({
   history: createWebHistory(),
   routes,
 })
+
+router.beforeEach((to) => {
+  const loggedIn = isLoggedIn()
+
+  // 需登入卻未登入：帶去登入頁，並把原目的地記在查詢字串，登入後送回去
+  if (to.meta.requiresAuth && !loggedIn) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  // 已登入還想去註冊／登入頁：沒有意義，直接帶到內容頁
+  if (to.meta.guestOnly && loggedIn) {
+    return { name: 'posts' }
+  }
+
+  return true
+})
+
+export default router

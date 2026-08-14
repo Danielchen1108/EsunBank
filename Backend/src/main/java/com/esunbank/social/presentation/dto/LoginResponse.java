@@ -12,5 +12,5 @@ package com.esunbank.social.presentation.dto;
  * @param token  JWT 憑證。後續請求須以 {@code Authorization: Bearer <token>} 帶回，
  *               否則發文與留言端點會回 401（題目 §2）
  */
-public record LoginResponse(Long userId, String token) {
+public record LoginResponse(Long userId, String userName, String token) {
 }

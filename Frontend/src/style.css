@@ -168,22 +168,6 @@ button.danger:hover:not(:disabled) {
 }
 
 /* ── 動態：以 Vue 內建 Transition 驅動，不引入動畫套件 ── */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity var(--dur) var(--ease),
-    transform var(--dur) var(--ease);
-}
-
-.fade-enter-from {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-
-.fade-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-
 /* 列表：新增時由上滑入、刪除時淡出、其餘項目平滑遞補 */
 .feed-enter-active {
   transition: opacity 320ms var(--ease), transform 320ms var(--ease);
