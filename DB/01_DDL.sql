@@ -1,7 +1,7 @@
 -- =============================================================================
 -- EsunBank 社群媒體系統 — DDL
 -- =============================================================================
-
+-- 資料庫：MySQL 8.0+
 -- 字元集：utf8mb4（社群內容需支援中文與 emoji）
 --
 -- 執行順序：01_DDL.sql -> 02_DDL_stored_procedures.sql -> 03_DML.sql
@@ -50,7 +50,7 @@ CREATE TABLE `user` (
 CREATE TABLE `post` (
     post_id    BIGINT UNSIGNED NOT NULL AUTO_INCREMENT               COMMENT '發文 ID',
     user_id    BIGINT UNSIGNED NOT NULL                              COMMENT '發文者，FK to user',
-    content    VARCHAR(2000)   NOT NULL                              COMMENT '發佈文章內容。長度上限依 ',
+    content    VARCHAR(2000)   NOT NULL                              COMMENT '發佈文章內容。2000 字上限為自訂，需求未定義；應用層以相同規則驗證',
     image      VARCHAR(255)        NULL DEFAULT NULL                 COMMENT '圖片路徑。需求標示為非必要欄位',
     created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP    COMMENT '發佈時間，由 DB 層產生',
     is_deleted BOOLEAN         NOT NULL DEFAULT FALSE                COMMENT '軟刪除旗標。需求未列，依「不限制僅能有以下」新增',
@@ -91,7 +91,7 @@ CREATE TABLE `comment` (
     comment_id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT               COMMENT '留言 ID',
     user_id    BIGINT UNSIGNED NOT NULL                              COMMENT '留言者，FK to user',
     post_id    BIGINT UNSIGNED NOT NULL                              COMMENT '所屬發文，FK to post',
-    content    VARCHAR(500)    NOT NULL                              COMMENT '留言內容。長度上限依 ',
+    content    VARCHAR(500)    NOT NULL                              COMMENT '留言內容。500 字上限為自訂，需求未定義；應用層以相同規則驗證',
     created_at DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP    COMMENT '留言時間，由 DB 層產生',
     is_deleted BOOLEAN         NOT NULL DEFAULT FALSE                COMMENT '軟刪除旗標。刪除發文時由 sp_post_delete 連動標記',
 
