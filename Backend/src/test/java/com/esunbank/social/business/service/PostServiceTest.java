@@ -21,6 +21,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.esunbank.social.data.repository.CommentRepository;
+import com.esunbank.social.data.repository.CommentRepository.CommentRow;
 import com.esunbank.social.data.repository.PostRepository;
 import com.esunbank.social.data.repository.PostRepository.PostRow;
 
@@ -35,6 +37,8 @@ import com.esunbank.social.data.repository.PostRepository.PostRow;
  *   <li>編輯前必須先確認目標存在且未被軟刪除（ADR-004 負面後果防範）</li>
  *   <li>編輯／刪除不檢查發文者身分（BG-4 裁決）——業務層方法簽章不接受操作者 ID，
  *       即為「不做身分檢查」的結構性證明</li>
+ *   <li>發文列表帶出留言時，留言由本層依 postId 分組（D-13）——
+ *       兩支 SP 各取一份資料，分組正確與否只有本層能驗</li>
  * </ol>
  */
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +46,13 @@ class PostServiceTest {
 
     @Mock
     private PostRepository postRepository;
+
+    /**
+     * 業務層直接注入 {@link CommentRepository} 而非 {@code CommentService}（D-13）：
+     * {@code business/package-info.java} 明訂業務層僅能呼叫 data 層。
+     */
+    @Mock
+    private CommentRepository commentRepository;
 
     @InjectMocks
     private PostService postService;
@@ -55,6 +66,17 @@ class PostServiceTest {
      */
     private PostRow post(long postId, String content) {
         return new PostRow(postId, 1L, "陳大文", content, LocalDateTime.of(2026, 8, 13, 10, 0));
+    }
+
+    /**
+     * 資料層回傳的留言資料列。
+     *
+     * <p>{@link CommentRow} 含 {@code postId}（業務層分組要用），
+     * 領域模型 {@link Comment} 則不含——本測試同時驗證這段映射。
+     */
+    private CommentRow comment(long commentId, long postId, String content, int minute) {
+        return new CommentRow(
+                commentId, postId, 2L, "林小明", content, LocalDateTime.of(2026, 8, 13, 10, minute));
     }
 
     @Test
@@ -79,6 +101,73 @@ class PostServiceTest {
     }
 
     @Test
+    @DisplayName("列出所有發文：留言掛到各自所屬的發文（D-13）")
+    void groupsCommentsByTheirOwnPost() {
+        when(postRepository.findAll()).thenReturn(List.of(post(1L, "第一篇"), post(2L, "第二篇")));
+        // 兩支 SP 各取一份資料，掛錯發文只有本層的分組邏輯擋得住——
+        // 刻意讓資料列交錯出現，證明分組不是靠輸入順序碰巧成立
+        when(commentRepository.listVisible()).thenReturn(List.of(
+                comment(11L, 1L, "留給第一篇", 40),
+                comment(21L, 2L, "留給第二篇", 41),
+                comment(12L, 1L, "也留給第一篇", 42)));
+
+        List<Post> posts = postService.listAll();
+
+        assertThat(posts.get(0).comments())
+                .extracting(Comment::content)
+                .containsExactly("留給第一篇", "也留給第一篇");
+        assertThat(posts.get(1).comments())
+                .extracting(Comment::content)
+                .containsExactly("留給第二篇");
+    }
+
+    @Test
+    @DisplayName("列出所有發文：沒有留言的發文得到空 List 而非 null")
+    void givesEmptyCommentListToPostWithoutComments() {
+        when(postRepository.findAll()).thenReturn(List.of(post(1L, "有人留言"), post(2L, "沒人留言")));
+        when(commentRepository.listVisible()).thenReturn(List.of(comment(11L, 1L, "留言", 40)));
+
+        List<Post> posts = postService.listAll();
+
+        // null 會逼每個使用端（含前端）多判一次，而空集合與「沒有留言」語意相同
+        assertThat(posts.get(1).comments()).isNotNull().isEmpty();
+    }
+
+    @Test
+    @DisplayName("列出所有發文：同一發文內的留言順序原樣保留——排序由 SP 決定，本層不重排")
+    void preservesCommentOrderWithinAPost() {
+        when(postRepository.findAll()).thenReturn(List.of(post(1L, "第一篇")));
+        // sp_comment_list_visible 已依 created_at、comment_id 排序。
+        // 本層若自行再排一次，排序規則就存在兩處，遲早不同步。
+        when(commentRepository.listVisible()).thenReturn(List.of(
+                comment(11L, 1L, "最早", 40),
+                comment(12L, 1L, "中間", 41),
+                comment(13L, 1L, "最晚", 42)));
+
+        assertThat(postService.listAll().get(0).comments())
+                .extracting(Comment::commentId)
+                .containsExactly(11L, 12L, 13L);
+    }
+
+    @Test
+    @DisplayName("列出所有發文：留言的資料列 postId 不進領域模型——巢狀結構已表達歸屬")
+    void mapsCommentRowWithoutPostId() {
+        when(postRepository.findAll()).thenReturn(List.of(post(1L, "第一篇")));
+        when(commentRepository.listVisible()).thenReturn(List.of(comment(11L, 1L, "留言內容", 40)));
+
+        assertThat(Comment.class.getRecordComponents())
+                .extracting(RecordComponent::getName)
+                .doesNotContain("postId");
+
+        Comment mapped = postService.listAll().get(0).comments().get(0);
+        assertThat(mapped.commentId()).isEqualTo(11L);
+        assertThat(mapped.userId()).isEqualTo(2L);
+        assertThat(mapped.userName()).isEqualTo("林小明");
+        assertThat(mapped.content()).isEqualTo("留言內容");
+        assertThat(mapped.createdAt()).isEqualTo(LocalDateTime.of(2026, 8, 13, 10, 40));
+    }
+
+    @Test
     @DisplayName("編輯發文：先確認目標存在，再呼叫更新")
     void updatesExistingPost() {
         when(postRepository.findById(1L)).thenReturn(Optional.of(post(1L, "原始內容")));
@@ -89,6 +178,36 @@ class PostServiceTest {
         verify(postRepository).update(1L, "修改後內容");
         assertThat(updated.content()).isEqualTo("修改後內容");
         assertThat(updated.postId()).isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("編輯發文：回應保留該篇原有的留言——編輯只異動 content（D-13）")
+    void updateKeepsExistingComments() {
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post(1L, "原始內容")));
+        when(postRepository.update(1L, "修改後內容")).thenReturn(1);
+        when(commentRepository.listVisible()).thenReturn(List.of(
+                comment(11L, 1L, "第一篇的留言", 40),
+                comment(21L, 2L, "別篇的留言", 41)));
+
+        Post updated = postService.update(new PostUpdateCommand(1L, "修改後內容"));
+
+        // update() 以既有資料換上新內容組成回應。漏掉 comments 的話，
+        // 前端以回應覆蓋卡片後，該篇的留言會在畫面上憑空消失。
+        assertThat(updated.comments())
+                .extracting(Comment::content)
+                .containsExactly("第一篇的留言");
+    }
+
+    @Test
+    @DisplayName("編輯沒有留言的發文：comments 為空 List 而非 null")
+    void updateGivesEmptyCommentListWhenPostHasNone() {
+        when(postRepository.findById(1L)).thenReturn(Optional.of(post(1L, "原始內容")));
+        when(postRepository.update(1L, "修改後內容")).thenReturn(1);
+        when(commentRepository.listVisible()).thenReturn(List.of(comment(21L, 2L, "別篇的留言", 41)));
+
+        assertThat(postService.update(new PostUpdateCommand(1L, "修改後內容")).comments())
+                .isNotNull()
+                .isEmpty();
     }
 
     @Test

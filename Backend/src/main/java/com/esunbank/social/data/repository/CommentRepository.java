@@ -3,6 +3,9 @@ package com.esunbank.social.data.repository;
 import java.sql.CallableStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -21,8 +24,9 @@ import com.esunbank.social.common.exception.CommentTargetPostNotFoundException;
  * 綁定，不進行字串拼接。搭配 SP 內部的靜態語句（不使用 {@code PREPARE} + {@code CONCAT}），
  * 兩端共同構成防護——僅使用 SP 而 SP 內拼接動態 SQL 並不免疫注入。
  *
- * <p><b>範圍：</b>僅有新增。題目 §4 原文只要求「使用者可以針對發文新增留言」，
- * 列出／編輯／刪除留言依 {@code SCOPE-BOUNDARY.md} 判定為 Out of Scope。
+ * <p><b>範圍：</b>新增（F005），以及供發文列表帶出留言的整批讀取（{@link #listVisible()}，
+ * 屬 F004——owner 於 D-13 明示追加，{@code F005-REQ.md} 早已寫明「若 F004 決定列表帶出留言，
+ * 則讀取邏輯歸屬 F004」）。編輯與刪除留言仍依 {@code SCOPE-BOUNDARY.md} 判定為 Out of Scope。
  */
 @Repository
 public class CommentRepository {
@@ -94,8 +98,74 @@ public class CommentRepository {
         }
     }
 
+    /**
+     * 呼叫 {@code sp_comment_list_visible} 一次取回所有可見留言（D-13）。
+     *
+     * <p>不接 postId 參數：發文列表需要的是「全部發文各自的留言」，逐篇查會變成 N+1。
+     * 整批取回後由業務層依 {@code postId} 分組，整個列表固定兩次資料庫往返。
+     *
+     * <p><b>可見 = 留言與其所屬發文皆未軟刪除。</b>SP 內 JOIN {@code post} 並同時過濾兩張表的
+     * {@code is_deleted}（ADR-004）。只過濾 {@code comment.is_deleted} 不夠——TD-002 的競態
+     * 會產生「未刪除的留言掛在已刪除的發文下」的孤兒資料，過去沒有讀取管道所以看不見，
+     * 一旦加上讀取就會浮現。過濾寫在 SP 內，本層與業務層都不需要記得補這個條件。
+     *
+     * <p>結果已由 SP 依 {@code post_id, created_at, comment_id} 排序，本層原樣保留順序——
+     * 留言是對話，順序本身就是資訊（對照 {@link PostRepository#findAll()} 刻意不排序）。
+     */
+    public List<CommentRow> listVisible() {
+        return jdbcTemplate.execute(
+                (java.sql.Connection connection) ->
+                        connection.prepareCall("{call sp_comment_list_visible()}"),
+                (CallableStatement statement) -> {
+                    statement.execute();
+                    List<CommentRow> comments = new ArrayList<>();
+                    try (ResultSet resultSet = statement.getResultSet()) {
+                        if (resultSet != null) {
+                            while (resultSet.next()) {
+                                comments.add(mapRow(resultSet));
+                            }
+                        }
+                    }
+                    return comments;
+                });
+    }
+
+    /** 資料列 → 資料層型別（資料層職責，見 {@code data/package-info.java}）。 */
+    private CommentRow mapRow(ResultSet resultSet) throws SQLException {
+        Timestamp createdAt = resultSet.getTimestamp("created_at");
+
+        return new CommentRow(
+                resultSet.getLong("comment_id"),
+                resultSet.getLong("post_id"),
+                resultSet.getLong("user_id"),
+                resultSet.getString("user_name"),
+                resultSet.getString("content"),
+                createdAt == null ? null : createdAt.toLocalDateTime());
+    }
+
     private boolean isPostNotFoundSignal(DataAccessException e) {
         return e.getMostSpecificCause() instanceof SQLException sqlException
                 && SQLSTATE_POST_NOT_FOUND_SIGNAL.equals(sqlException.getSQLState());
+    }
+
+    /**
+     * 留言的資料列表示（資料層）。
+     *
+     * <p>與 {@link PostRepository.PostRow}、{@code UserRepository.UserCredentials} 同一做法：
+     * 資料層定義自己的資料列型別，不回傳業務層的領域模型——
+     * {@code data/package-info.java} 宣告資料層不得依賴業務層。
+     *
+     * <p><b>含 {@code postId}：</b>它是業務層分組時的鍵，必須從資料層帶上來。
+     * 領域模型 {@code Comment} 則不含此欄——留言掛在哪則發文下，由巢狀結構本身表達。
+     *
+     * <p>不含 {@code is_deleted}：{@code sp_comment_list_visible} 已保證只回傳可見留言。
+     */
+    public record CommentRow(
+            Long commentId,
+            Long postId,
+            Long userId,
+            String userName,
+            String content,
+            java.time.LocalDateTime createdAt) {
     }
 }

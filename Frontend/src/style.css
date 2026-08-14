@@ -167,31 +167,24 @@ button.danger:hover:not(:disabled) {
   outline-offset: 2px;
 }
 
-/* ── 動態：以 Vue 內建 Transition 驅動，不引入動畫套件 ── */
-/* 列表：新增時由上滑入、刪除時淡出、其餘項目平滑遞補 */
-.feed-enter-active {
-  transition: opacity 320ms var(--ease), transform 320ms var(--ease);
-}
-
-.feed-leave-active {
-  transition: opacity 200ms var(--ease), transform 200ms var(--ease);
-  position: absolute;
-  width: 100%;
-}
-
-.feed-enter-from {
-  opacity: 0;
-  transform: translateY(-10px) scale(0.99);
-}
-
-.feed-leave-to {
-  opacity: 0;
-  transform: scale(0.98);
-}
-
-.feed-move {
-  transition: transform 320ms var(--ease);
-}
+/*
+ * ── 動態 ─────────────────────────────────────────────
+ * 列表沒有進場／離場／位移動畫，這是實測後的決定，不是遺漏。
+ *
+ * Vue 的 Transition 與 TransitionGroup 都以 requestAnimationFrame 推進。
+ * 分頁在背景時 rAF 被瀏覽器節流，於是：
+ *   - 進場：新發文停在 opacity: 0，看不見
+ *   - 離場：已刪除的發文不會從 DOM 移除，一直留在畫面上
+ * （實測 visibilityState=hidden 時重現；改 CSS 為 transition: none 無效，
+ *   問題在推進機制而非時長。）
+ *
+ * 先前移除整頁過場是同一個根因。判準一致：
+ * **內容的可見性與存在與否，不該是動畫能不能跑完的副產物。**
+ *
+ * 動態改由不影響內容存在性的地方承擔：按鈕 hover／active、
+ * 輸入框 focus、導覽列底線展開、卡片 hover 陰影——這些即使不跑完，
+ * 使用者看到的仍是完整正確的內容。
+ */
 
 /*
  * 尊重系統的「減少動態」設定。

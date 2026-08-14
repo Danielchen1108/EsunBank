@@ -29,6 +29,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
+import com.esunbank.social.business.service.Comment;
 import com.esunbank.social.business.service.Post;
 import com.esunbank.social.business.service.PostCreateCommand;
 import com.esunbank.social.business.service.PostNotFoundException;
@@ -82,7 +83,17 @@ class PostControllerTest {
     }
 
     private Post samplePost(long postId, long userId, String content) {
-        return new Post(postId, userId, "陳大文", content, LocalDateTime.of(2026, 8, 13, 10, 0));
+        return samplePost(postId, userId, content, List.of());
+    }
+
+    private Post samplePost(long postId, long userId, String content, List<Comment> comments) {
+        return new Post(
+                postId, userId, "陳大文", content, LocalDateTime.of(2026, 8, 13, 10, 0), comments);
+    }
+
+    private Comment sampleComment(long commentId, long userId, String content, int minute) {
+        return new Comment(
+                commentId, userId, "林小明", content, LocalDateTime.of(2026, 8, 13, 10, minute));
     }
 
     @Test
@@ -149,13 +160,38 @@ class PostControllerTest {
     }
 
     @Test
-    @DisplayName("列出所有發文不帶出留言——OQ-1 決定：F004 與 F005 職責分離")
-    void listDoesNotIncludeComments() throws Exception {
-        when(postService.listAll()).thenReturn(List.of(samplePost(1L, 1L, "第一篇")));
+    @DisplayName("列出所有發文一併帶出留言，欄位齊全且順序保留（D-13）")
+    void listIncludesComments() throws Exception {
+        // 本測試取代原本的 listDoesNotIncludeComments——OQ-1 原決定不帶出，
+        // 後由 owner 明示追加（D-13）。舊測試把該決定固化成規格，故一併反轉。
+        when(postService.listAll()).thenReturn(List.of(samplePost(1L, 1L, "第一篇", List.of(
+                sampleComment(11L, 2L, "先留的", 40),
+                sampleComment(12L, 3L, "後留的", 45)))));
 
         mockMvc.perform(get("/api/posts").with(loginAs(2L)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].comments").doesNotExist());
+                .andExpect(jsonPath("$[0].comments.length()").value(2))
+                .andExpect(jsonPath("$[0].comments[0].commentId").value(11))
+                .andExpect(jsonPath("$[0].comments[0].userId").value(2))
+                .andExpect(jsonPath("$[0].comments[0].userName").value("林小明"))
+                .andExpect(jsonPath("$[0].comments[0].content").value("先留的"))
+                .andExpect(jsonPath("$[0].comments[0].createdAt").exists())
+                // 業務層傳來的順序原樣輸出：留言是對話，順序本身就是資訊
+                .andExpect(jsonPath("$[0].comments[1].content").value("後留的"))
+                // 留言巢狀於所屬發文之下，postId 是分組的鍵而非留言本身的屬性，
+                // 重複帶出只會多一個可能與外層不一致的欄位（見 CommentResponse）
+                .andExpect(jsonPath("$[0].comments[0].postId").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("沒有留言的發文回傳空陣列而非 null——前端不必多判一次")
+    void listReturnsEmptyArrayForPostWithoutComments() throws Exception {
+        when(postService.listAll()).thenReturn(List.of(samplePost(1L, 1L, "沒人留言")));
+
+        mockMvc.perform(get("/api/posts").with(loginAs(2L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].comments").isArray())
+                .andExpect(jsonPath("$[0].comments").isEmpty());
     }
 
     @Test

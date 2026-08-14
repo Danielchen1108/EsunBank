@@ -22,9 +22,13 @@ import jakarta.validation.Valid;
  *
  * <p>對應題目 §4「使用者可以針對發文新增留言」。
  *
- * <p><b>只有新增。</b>題目 §4 原文僅此一句；列出、編輯、刪除留言依
- * {@code SCOPE-BOUNDARY.md} 判定為 Out of Scope。發文列表是否一併帶出留言由 F004 決定
- * （已決定不帶出），故本控制器不提供任何讀取端點。
+ * <p><b>本控制器只有新增。</b>題目 §4 原文僅此一句；編輯與刪除留言依
+ * {@code SCOPE-BOUNDARY.md} 判定為 Out of Scope。
+ *
+ * <p><b>讀取留言走 {@code GET /api/posts}（D-13）：</b>發文列表已一併帶出每則發文的留言，
+ * 本控制器因此不需要、也刻意不提供留言的讀取端點——前端要的是「每則發文底下的留言」，
+ * 另開一支端點只會讓它逐篇再查一次（N+1）。該讀取邏輯歸屬 F004，
+ * 與 {@code F005-REQ.md} 早已寫明的分工一致。
  *
  * <p><b>需驗證（題目 §2）：</b>本控制器的端點<b>不在</b> {@code SecurityConfig} 白名單內，
  * 由 {@code anyRequest().authenticated()} 的 deny-by-default 涵蓋，

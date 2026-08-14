@@ -10,8 +10,12 @@ import com.esunbank.social.data.repository.CommentRepository;
  * <p>對應題目 §4「使用者可以針對發文新增留言」。
  *
  * <p><b>範圍：</b>題目 §4 原文只有新增這一句，故本服務只有一個方法。
- * 列出／編輯／刪除留言依 {@code SCOPE-BOUNDARY.md} 為 Out of Scope，
- * 「只有新增而沒有列出」是題目的選擇，不是遺漏。
+ * 編輯與刪除留言依 {@code SCOPE-BOUNDARY.md} 仍為 Out of Scope。
+ *
+ * <p><b>讀取留言不在本服務：</b>留言隨發文列表一併帶出（D-13），該讀取歸屬 F004，
+ * 由 {@code PostService} 直接呼叫 {@code CommentRepository} 完成——
+ * {@code business/package-info.java} 明訂業務層僅能呼叫 data 層，
+ * 若改由 {@code PostService} 呼叫本服務，會形成業務層互相呼叫而牴觸該宣告。
  */
 @Service
 public class CommentService {

@@ -84,8 +84,20 @@ CREATE TABLE `comment` (
 
     PRIMARY KEY (comment_id),
 
-    -- 依發文查其未刪除留言；刪除發文時亦以 post_id 定位待標記留言（AC-15）
-    KEY idx_comment_post_deleted (post_id, is_deleted),
+    -- 兩條讀寫路徑共用這一個索引，欄位順序由「誰是等值條件」決定：
+    --
+    --   sp_post_delete       WHERE post_id = ? AND is_deleted = FALSE   兩者皆等值
+    --   sp_comment_list_visible  WHERE is_deleted = FALSE               只有它是等值，
+    --                            ORDER BY post_id, created_at, comment_id
+    --
+    -- 因此 is_deleted 必須放前導：列表查詢沒有 post_id 條件，
+    -- 若把 post_id 放第一欄，前導欄位無約束，MySQL 會退回全表掃描加 filesort
+    -- （實測 EXPLAIN 為 key: NULL / Using filesort）。
+    -- is_deleted 在前時，後面的 post_id、created_at 天然就是排序順序，
+    -- ORDER BY 直接由索引提供（實測 Extra: NULL，無 filesort）。
+    --
+    -- 刪除路徑不受影響：它對兩欄都是等值條件，順序不影響可用性。
+    KEY idx_comment_deleted_post (is_deleted, post_id, created_at),
 
     CONSTRAINT fk_comment_user
         FOREIGN KEY (user_id) REFERENCES `user` (user_id)

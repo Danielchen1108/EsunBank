@@ -1,14 +1,19 @@
 package com.esunbank.social.presentation.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.esunbank.social.business.service.Post;
 
 /**
  * 發文回應（列表與編輯共用）。
  *
- * <p><b>不含留言：</b>「列出所有發文」是否帶出留言題目未定義（{@code F004-REQ.md} OQ-1），
- * 決定為不帶出——維持 F004（發文）與 F005（留言）的職責分離，理由記於 {@code F004-API.md}。
+ * <p><b>含留言：</b>「列出所有發文」是否帶出留言題目未定義（{@code F004-REQ.md} OQ-1），
+ * 原決定為不帶出，後由 owner 明示追加（D-13）。留言巢狀於 {@link #comments()}，
+ * 讓前端一次請求就取得整個畫面所需的資料，不必逐篇再查（N+1）。
+ *
+ * <p>沒有留言的發文回傳空陣列而非 null——{@code []} 與 {@code null} 在前端得分開處理，
+ * 但語意上並無差別，統一為空陣列可省掉那個判斷。
  *
  * <p><b>不含 is_deleted：</b>回應中的發文必然是未刪除的（ADR-004 的讀取過濾在 SP 內），
  * 帶出這個旗標只會誘使前端自行判斷，反而製造漏過濾的機會。
@@ -26,7 +31,8 @@ public record PostResponse(
         Long userId,
         String userName,
         String content,
-        LocalDateTime createdAt) {
+        LocalDateTime createdAt,
+        List<CommentResponse> comments) {
 
     public static PostResponse from(Post post) {
         return new PostResponse(
@@ -34,6 +40,9 @@ public record PostResponse(
                 post.userId(),
                 post.userName(),
                 post.content(),
-                post.createdAt());
+                post.createdAt(),
+                post.comments().stream()
+                        .map(CommentResponse::from)
+                        .toList());
     }
 }

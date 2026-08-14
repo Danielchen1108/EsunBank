@@ -85,8 +85,12 @@ public class PostController {
      *
      * <p>已軟刪除的發文不會出現——過濾條件在 {@code sp_post_list} 內（ADR-004）。
      *
-     * <p>不帶出留言（OQ-1 決定）、不排序、不分頁——題目未定義，
-     * 依 `SCOPE-BOUNDARY.md` 判定原則 R-3 不實作。
+     * <p><b>每則發文一併帶出其留言</b>（OQ-1 原決定不帶出，後由 owner 明示追加，D-13）——
+     * 一次請求就取得畫面所需的全部資料，前端不必逐篇再查留言（N+1）。
+     * 沒有留言的發文回傳空陣列。
+     *
+     * <p>留言依時間排序（順序即對話），但<b>發文本身不排序、不分頁</b>——
+     * 題目未定義發文的排序規則，依 `SCOPE-BOUNDARY.md` 判定原則 R-3 不實作。
      */
     @GetMapping
     public ResponseEntity<List<PostResponse>> list() {

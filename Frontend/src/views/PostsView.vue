@@ -24,8 +24,12 @@ import { createComment, createPost, deletePost, listPosts, updatePost } from '..
  * 沒有排序：後端 sp_post_list 刻意不寫 ORDER BY（題目未定義排序規則），
  * 前端照回傳順序顯示，不自行排序，避免實作出題目未定義的行為。
  *
- * 沒有留言列表：題目 §4 只要求「新增留言」，列出／編輯／刪除留言皆為 Out of Scope
- * （SCOPE-BOUNDARY.md R-3），後端也沒有對應端點，故留言送出後只回饋成功訊息。
+ * 留言列表：由 GET /api/posts 隨發文一併帶回（一次請求拿齊，避免每篇再打一次 API 的 N+1），
+ * 後端已依時間由舊到新排序，前端不再排序。預設只顯示最後 3 則，其餘由「顯示全部」展開——
+ * 留言是對話，順序本身就是資訊，這點與「發文列表不排序」的取捨不同。
+ *
+ * 留言的編輯與刪除仍不做：題目 §4 只寫「新增留言」（SCOPE-BOUNDARY.md R-3），
+ * 後端也沒有對應端點。
  */
 const router = useRouter()
 
@@ -64,8 +68,23 @@ const confirmingDeleteId = ref(null)
 
 const commentDrafts = reactive({})
 const commentErrors = reactive({})
-const commentSent = reactive({})
 const commenting = reactive({})
+
+/**
+ * 每篇發文預設顯示的留言則數。
+ *
+ * 動態牆是一路往下滑的，每篇都攤開全部留言會讓發文本身被淹沒；
+ * 留三則足以看出「這裡有對話」，想看全部的人再展開。
+ */
+const COMMENT_PREVIEW = 3
+
+/**
+ * 已展開留言的發文，以 postId 為鍵。
+ *
+ * 刻意獨立於 posts：loadPosts() 只換掉 posts.value，不會動到這個物件，
+ * 所以送出留言後重新載入列表，使用者剛剛展開的留言不會被收回去。
+ */
+const expandedComments = reactive({})
 
 /**
  * 把 API 錯誤轉成可讀訊息；401 一律導向登入頁。
@@ -216,20 +235,47 @@ async function onDelete(post) {
   }
 }
 
+/**
+ * 該篇發文目前要顯示的留言。
+ *
+ * 未展開時只取尾端 COMMENT_PREVIEW 則：後端由舊到新排序，尾端即最新，
+ * 與展開後的順序一致，展開時不會有內容跳位。
+ *
+ * 仍容忍 comments 缺欄位（?? []）：這支畫面與後端各自部署，
+ * 對著舊版後端時應該是「沒有留言」，而不是整頁壞掉。
+ */
+function visibleComments(post) {
+  const comments = post.comments ?? []
+
+  if (expandedComments[post.postId] || comments.length <= COMMENT_PREVIEW) {
+    return comments
+  }
+
+  return comments.slice(-COMMENT_PREVIEW)
+}
+
+function commentCount(post) {
+  return post.comments?.length ?? 0
+}
+
+/** 展開／收合留言。純前端切換——留言已隨發文一併載入，不需要再發請求。 */
+function toggleComments(postId) {
+  expandedComments[postId] = !expandedComments[postId]
+}
+
 async function onComment(post) {
   const postId = post.postId
   const content = commentDrafts[postId] ?? ''
 
   commentErrors[postId] = ''
-  commentSent[postId] = false
   commenting[postId] = true
 
   try {
     await createComment(postId, { content })
-    // 清空輸入框並回饋成功。不重新載入留言列表——列出留言不在題目範圍內，
-    // 後端沒有可查詢留言的端點。
+    // 清空輸入框後重新載入：新留言直接出現在下方的列表裡，那就是最好的回饋，
+    // 不需要另外一行「已送出」的訊息（也就不會有訊息清不掉的問題）。
     commentDrafts[postId] = ''
-    commentSent[postId] = true
+    await loadPosts()
   } catch (e) {
     commentErrors[postId] = toMessage(e)
     // 404：目標發文不存在或已被刪除，重新載入列表讓畫面與伺服器一致
@@ -284,9 +330,18 @@ function formatTime(createdAt) {
       照後端回傳順序顯示，前端不排序（題目未定義排序規則）。
       內容一律用 {{ }} 插值輸出，插值會跳脫 HTML——這是本案的 XSS 防線，不得改用 v-html。
     -->
-    <!-- TransitionGroup 為 Vue 內建：新增時滑入、刪除時淡出、其餘項目平滑遞補。
-         未引入動畫套件——見 App.vue 的說明。 -->
-    <TransitionGroup name="feed" tag="div" class="feed">
+    <!--
+      刻意不用 <TransitionGroup> 包這個列表。
+
+      Vue 的 transition 機制以 requestAnimationFrame 推進（套用 -to class、
+      判定結束都靠它）。分頁在背景時 rAF 被瀏覽器節流，離場動畫永遠不完成，
+      **已刪除的發文就不會從 DOM 移除，一直留在畫面上**。
+      實測確認：改 CSS 為 transition: none 也無效，問題在推進機制不在時長。
+
+      這與先前移除整頁過場是同一個根因，判準相同：
+      **內容的存在與否，不該取決於動畫跑不跑得完。**
+    -->
+    <div class="feed">
     <article v-for="post in posts" :key="post.postId" class="post">
       <header>
         <div class="meta">
@@ -356,7 +411,47 @@ function formatTime(createdAt) {
       </template>
 
       <!--
-        針對發文新增留言（題目 §4）。只有新增，沒有列出／編輯／刪除。
+        留言列表（隨 GET /api/posts 一併帶回）。
+
+        放在輸入框「上方」：先看到既有對話，再決定要說什麼——
+        這是社群平台的閱讀順序，不是先給筆再給紙。
+
+        留言者名稱與留言內容同樣是使用者輸入且會回顯，一律用 {{ }} 插值輸出。
+        本檔開頭的 XSS 說明對這一段完全適用：**不得改用 v-html**。
+      -->
+      <div v-if="commentCount(post) > 0" class="comments">
+        <!-- 展開是純前端切換：留言早就在手上，不會因此多打一次 API -->
+        <button
+          v-if="commentCount(post) > COMMENT_PREVIEW"
+          type="button"
+          class="comment-toggle"
+          :aria-expanded="expandedComments[post.postId] === true"
+          @click="toggleComments(post.postId)"
+        >
+          {{
+            expandedComments[post.postId]
+              ? `只顯示最新 ${COMMENT_PREVIEW} 則`
+              : `顯示全部 ${commentCount(post)} 則留言`
+          }}
+        </button>
+
+        <ul class="comment-list">
+          <li
+            v-for="comment in visibleComments(post)"
+            :key="comment.commentId"
+            class="comment-item"
+          >
+            <div class="comment-meta">
+              <span class="comment-author">{{ comment.userName }}</span>
+              <span class="time">{{ formatTime(comment.createdAt) }}</span>
+            </div>
+            <p class="comment-text">{{ comment.content }}</p>
+          </li>
+        </ul>
+      </div>
+
+      <!--
+        針對發文新增留言（題目 §4）。編輯與刪除留言仍不做。
 
         送出鈕只在輸入框有內容時出現：空著的時候，一則貼文下面掛一顆按不了的鈕
         是純粹的視覺噪音——社群動態是一路往下滑的，每則都多一顆灰鈕會很吵。
@@ -380,11 +475,8 @@ function formatTime(createdAt) {
       <small v-if="commentErrors[post.postId]" class="error">
         {{ commentErrors[post.postId] }}
       </small>
-      <small v-else-if="commentSent[post.postId]" class="success">
-        留言已送出。
-      </small>
     </article>
-    </TransitionGroup>
+    </div>
   </section>
 </template>
 
@@ -611,7 +703,79 @@ h1 {
   margin-bottom: 0.5rem;
 }
 
-/* ── 留言 ───────────────────────────────────────── */
+/* ── 留言列表 ───────────────────────────────────── */
+/*
+ * 留言在視覺上必須從屬於發文：字級較小、名稱不與發文作者同級、
+ * 靠左側一道極淺的主色線收攏成一個區塊，讓眼睛知道這些話是掛在上面那則發文底下的。
+ */
+.comments {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--stone-200);
+}
+
+.comment-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.comment-item {
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--jade-100);
+}
+
+.comment-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.comment-author {
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* 留言的時間比發文的再小一級——它是註記，不是資訊主體 */
+.comment-item .time {
+  font-size: 0.72rem;
+}
+
+/* 與發文內容同樣保留換行、同樣只走 {{ }} 插值，不解讀 HTML */
+.comment-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/*
+ * 「顯示全部」是導覽性質的次要動作，不該長得像發文區的實心主鈕，
+ * 故拆掉底色只留文字；hover 時才用主色表示可點。
+ */
+.comment-toggle {
+  display: block;
+  margin-bottom: 0.6rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--stone-400);
+  transition: color var(--dur) var(--ease);
+}
+
+.comment-toggle:hover {
+  background: none;
+  color: var(--jade-700);
+}
+
+/* ── 留言輸入 ───────────────────────────────────── */
 .comment {
   display: flex;
   align-items: stretch;
@@ -619,6 +783,16 @@ h1 {
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--stone-200);
+}
+
+/*
+ * 已經有留言列表時，分隔線由 .comments 承擔，輸入框只留間距。
+ * 兩條線疊在一起會把留言區切成兩塊，但它們本來就是同一件事的兩面。
+ */
+.comments + .comment {
+  margin-top: 0.85rem;
+  padding-top: 0;
+  border-top: 0;
 }
 
 .comment input {
@@ -643,9 +817,8 @@ h1 {
   border-color: var(--jade-500);
 }
 
-/* 留言送出後的回饋緊接在表單下方 */
-.comment + .error,
-.comment + .success {
+/* 留言送出失敗的訊息緊接在表單下方（成功不另外提示——新留言會直接出現在列表裡） */
+.comment + .error {
   display: block;
   margin-top: 0.5rem;
   font-size: 0.8rem;
@@ -668,11 +841,6 @@ h1 {
 .error {
   color: var(--clay-600);
   background: var(--clay-50);
-}
-
-.success {
-  color: var(--jade-700);
-  background: var(--jade-100);
 }
 
 .field-error,
@@ -701,6 +869,11 @@ h1 {
   /* 留言列在窄螢幕改為上下堆疊：並排時輸入框會被壓到放不下一行字 */
   .comment {
     flex-direction: column;
+  }
+
+  /* 窄螢幕的行長本來就緊，留言的縮排再讓一點給內容 */
+  .comment-item {
+    padding-left: 0.6rem;
   }
 
   .comment button {

@@ -22,6 +22,7 @@ DROP PROCEDURE IF EXISTS sp_post_find_by_id;
 DROP PROCEDURE IF EXISTS sp_post_update;
 DROP PROCEDURE IF EXISTS sp_post_delete;
 DROP PROCEDURE IF EXISTS sp_comment_create;
+DROP PROCEDURE IF EXISTS sp_comment_list_visible;
 
 DELIMITER $$
 
@@ -224,6 +225,43 @@ BEGIN
     VALUES (p_user_id, p_post_id, p_content);
 
     SELECT LAST_INSERT_ID() AS comment_id;
+END$$
+
+
+-- -----------------------------------------------------------------------------
+-- sp_comment_list_visible — 列出所有可見留言（F004 發文列表用）
+-- -----------------------------------------------------------------------------
+-- 一次取回全部可見留言，由業務層依 post_id 分組掛回各則發文。
+--
+--   為什麼不把留言 JOIN 進 sp_post_list：
+--   那會讓回傳變成「發文欄位隨留言重複」的扁平列，映射複雜，
+--   且已通過驗證的 sp_post_list 行為得跟著改動。
+--   拆成兩支各司其職的 SP，總共兩次往返，也不會有 N+1。
+--
+--   為什麼同時過濾 comment 與 post 的 is_deleted：
+--   只看 c.is_deleted 不夠。sp_comment_create 的存在性檢查與寫入未包在同一交易內
+--   （memory/TECH_DEBT.md TD-002），競態下會產生「未刪除的留言掛在已刪除的發文下」
+--   的孤兒資料。JOIN post 一併過濾，使本 SP 的正確性不依賴呼叫端是否記得排除。
+--
+--   排序帶 comment_id 當決勝欄位：
+--   created_at 是 DATETIME（秒精度），同一秒內的多則留言只靠時間排序順序不確定。
+--   （對照：sp_post_list 刻意不排序，因為需求未定義發文的排序規則；
+--     留言不同——它是對話，順序本身就是資訊。）
+-- -----------------------------------------------------------------------------
+CREATE PROCEDURE sp_comment_list_visible()
+BEGIN
+    SELECT c.comment_id,
+           c.post_id,
+           c.user_id,
+           u.user_name,
+           c.content,
+           c.created_at
+      FROM `comment` c
+      JOIN `post` p ON p.post_id = c.post_id
+      JOIN `user` u ON u.user_id = c.user_id
+     WHERE c.is_deleted = FALSE
+       AND p.is_deleted = FALSE
+     ORDER BY c.post_id, c.created_at, c.comment_id;
 END$$
 
 DELIMITER ;

@@ -168,8 +168,14 @@ export async function login(payload) {
  *
  * 已軟刪除的發文不會出現（過濾條件在 Stored Procedure 內，ADR-004）。
  *
+ * 每篇發文一併帶回自己的留言：留言的讀取沒有獨立端點，全部走這一支——
+ * 若改成每篇再打一次 API，列表一展開就是 N+1 次請求。
+ * comments 由後端依時間由舊到新排序，沒有留言時為空陣列，前端不再排序。
+ *
  * @returns {Promise<Array<{postId: number, userId: number, userName: string,
- *   content: string, createdAt: string}>>}
+ *   content: string, createdAt: string,
+ *   comments: Array<{commentId: number, userId: number, userName: string,
+ *     content: string, createdAt: string}>}>>}
  */
 export function listPosts() {
   return request('/api/posts')
@@ -236,7 +242,9 @@ export function deletePost(postId) {
  * postId 放在路徑而非請求內容：留言依附於發文，歸屬關係直接呈現在 URI 上
  * （RESTful，題目 §6）。留言者同樣由後端從登入憑證取得。
  *
- * 刻意沒有 listComments / updateComment / deleteComment：題目 §4 只寫「新增留言」，
+ * 沒有 listComments：留言的讀取不走獨立端點，由 listPosts() 隨發文一併帶回。
+ *
+ * 刻意沒有 updateComment / deleteComment：題目 §4 只寫「新增留言」，
  * 依 SCOPE-BOUNDARY.md 判定原則 R-3 不實作，後端也沒有對應端點。
  *
  * @param {number} postId 目標發文，必須存在且未被刪除，否則後端回 404
