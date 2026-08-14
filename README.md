@@ -39,9 +39,18 @@ mysql -u root -p < DB/02_DDL_stored_procedures.sql
 mysql -u root -p < DB/03_DML.sql
 ```
 
-**2. 設定環境變數**
+**2. 設定環境變數（多數情況可略過）**
 
-各變數的用途與預設值見 `.env.example`。可以複製後載入：
+三個變數都有可用的預設值，`root` 帳號無密碼的環境**可以直接跳到第 3 步**。
+
+| 變數 | 未設定時 |
+|---|---|
+| `DB_USERNAME` | `root` |
+| `DB_PASSWORD` | 空字串 |
+| `APP_JWT_SECRET` | 啟動時隨機產生，並在日誌提醒 |
+
+需要調整時，複製 `.env.example` 填值後載入（Spring Boot 不會自動讀 `.env`，
+必須先載入環境變數）：
 
 ```bash
 cp .env.example .env
@@ -51,13 +60,15 @@ set -a && source .env && set +a
 或直接指定：
 
 ```bash
-export DB_USERNAME=root
-export DB_PASSWORD='你的 MySQL 密碼'      # 沒有密碼就寫 export DB_PASSWORD=
-export APP_JWT_SECRET=$(openssl rand -base64 48)
+export DB_PASSWORD='你的 MySQL 密碼'
 ```
 
-**兩者都不設也能啟動**——資料庫預設用 `root` 與空密碼，JWT 則改用啟動時隨機產生的金鑰
-（日誌會提醒），代價只是重啟後需重新登入一次。
+**關於 `APP_JWT_SECRET`：不必自行產生金鑰也能完整操作系統。**
+未設定時每次啟動換一把隨機金鑰，唯一影響是重啟後需重新登入一次。
+
+範例檔中此欄**刻意留空、不附預設金鑰**：HS256 簽發與驗證使用同一把對稱金鑰，
+金鑰若隨原始碼散布，任何取得程式碼的人都能簽出合法憑證、冒用任意身分。
+要讓憑證跨重啟有效，請自行產生：`openssl rand -base64 48`。
 
 **3. 啟動後端**
 
