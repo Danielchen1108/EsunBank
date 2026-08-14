@@ -41,13 +41,23 @@ mysql -u root -p < DB/03_DML.sql
 
 **2. 設定環境變數**
 
+各變數的用途與預設值見 `.env.example`。可以複製後載入：
+
+```bash
+cp .env.example .env
+set -a && source .env && set +a
+```
+
+或直接指定：
+
 ```bash
 export DB_USERNAME=root
 export DB_PASSWORD='你的 MySQL 密碼'      # 沒有密碼就寫 export DB_PASSWORD=
 export APP_JWT_SECRET=$(openssl rand -base64 48)
 ```
 
-`APP_JWT_SECRET` 不設也能啟動，但每次重啟會換一把隨機金鑰，先前登入的憑證會失效。
+**兩者都不設也能啟動**——資料庫預設用 `root` 與空密碼，JWT 則改用啟動時隨機產生的金鑰
+（日誌會提醒），代價只是重啟後需重新登入一次。
 
 **3. 啟動後端**
 
