@@ -102,11 +102,17 @@ class SecurityConfigTest {
     }
 
     @Test
-    @DisplayName("健康檢查與註冊、登入端點免驗證")
+    @DisplayName("註冊與登入端點免驗證——尚無帳號的人必須進得來")
     void publicEndpointsRemainOpen() throws Exception {
-        // 健康檢查控制器不在本 @WebMvcTest 範圍內，故預期 404（路由不到）而非 401（被擋）
-        expectNotBlockedByAuthorization(get("/api/health"));
         expectNotBlockedByAuthorization(post("/api/auth/register"));
         expectNotBlockedByAuthorization(post("/api/auth/login"));
+    }
+
+    @Test
+    @DisplayName("白名單只有註冊與登入——其餘一律要求驗證")
+    void healthEndpointNoLongerExists() throws Exception {
+        // 健康檢查端點已移除（題目 §1–§4 未要求）。
+        // 它曾在白名單內且未驗證即回報資料庫狀態；移除後這條路徑回到 deny by default。
+        expectUnauthorized(get("/api/health"));
     }
 }

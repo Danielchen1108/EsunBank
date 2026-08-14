@@ -66,9 +66,8 @@ public class SecurityConfig {
      * HTTP Basic 每次請求都要帶明碼帳密，且會觸發瀏覽器原生登入視窗，
      * 不適用於題目 §6 指定的 Vue.js 前後端分離架構。
      *
-     * <p><b>白名單（permitAll）：</b>
+     * <p><b>白名單（permitAll）：</b>只有「還沒有身分的人也必須能用」的兩個端點。
      * <ul>
-     *   <li>{@code GET /api/health} — 連線狀態檢查，不含使用者資料</li>
      *   <li>{@code POST /api/auth/register} — 使用者此時尚無帳號（題目 §1）</li>
      *   <li>{@code POST /api/auth/login} — 登入本身若需先登入即成死結</li>
      * </ul>
@@ -91,7 +90,6 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.GET, "/api/health").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                 .anyRequest().authenticated()

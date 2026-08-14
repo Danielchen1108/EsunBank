@@ -119,11 +119,6 @@ export async function request(path, options = {}) {
   return body
 }
 
-/** 健康檢查：確認 Application Server 與資料庫是否連通（R101 骨架驗證用）。 */
-export function fetchHealth() {
-  return request('/api/health')
-}
-
 /**
  * 註冊帳號（題目 §1）。
  *

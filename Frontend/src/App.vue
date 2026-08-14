@@ -73,7 +73,6 @@ function onLogout() {
       <nav>
         <template v-if="authState.loggedIn">
           <RouterLink to="/posts">發文</RouterLink>
-          <RouterLink to="/health">連線狀態</RouterLink>
           <span class="who" :title="authState.userName">{{ authState.userName }}</span>
           <button type="button" class="link" @click="onLogout">登出</button>
         </template>
@@ -81,7 +80,6 @@ function onLogout() {
         <template v-else>
           <RouterLink to="/login">登入</RouterLink>
           <RouterLink to="/register">註冊</RouterLink>
-          <RouterLink to="/health">連線狀態</RouterLink>
         </template>
       </nav>
     </div>

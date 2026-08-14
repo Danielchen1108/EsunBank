@@ -74,11 +74,17 @@ cd Backend
 ./mvnw spring-boot:run
 ```
 
-啟動於 `http://localhost:8080`。健康檢查（免登入，可確認 AP 與資料庫連通）：
+啟動於 `http://localhost:8080`。確認 AP 與資料庫都通了——用種子帳號登入，
+這一步會實際經過 Spring Boot → Stored Procedure → MySQL 全程：
 
 ```bash
-curl http://localhost:8080/api/health
+curl -s -X POST http://localhost:8080/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"phone":"0912345678","password":"Test1234"}'
 ```
+
+回傳 `{"userId":1,"userName":"陳大文","token":"eyJ..."}` 即表示三層都正常。
+若資料庫未建立或連線設定有誤，這裡會直接失敗。
 
 ### 4. 啟動前端
 
@@ -135,7 +141,6 @@ curl -s http://localhost:8080/api/posts -H "Authorization: Bearer $TOKEN"
 | PUT | `/api/posts/{postId}` | 編輯發文（§3） | ✅ | 200 |
 | DELETE | `/api/posts/{postId}` | 刪除發文，軟刪除並連動留言（§3） | ✅ | 204 |
 | POST | `/api/posts/{postId}/comments` | 針對發文新增留言（§4） | ✅ | 201 |
-| GET | `/api/health` | 健康檢查（骨架驗證用，非題目要求） | — | 200 |
 
 需登入的端點以 `Authorization: Bearer <token>` 帶入登入取得的憑證。發文者／留言者一律由後端從憑證取得，不接受由請求指定。
 

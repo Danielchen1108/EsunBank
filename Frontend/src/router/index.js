@@ -2,7 +2,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import RegisterView from '../views/RegisterView.vue'
 import LoginView from '../views/LoginView.vue'
 import PostsView from '../views/PostsView.vue'
-import HealthView from '../views/HealthView.vue'
 import { isLoggedIn } from '../api/client.js'
 
 /**
@@ -51,13 +50,6 @@ const routes = [
     name: 'posts',
     component: PostsView,
     meta: { requiresAuth: true },
-  },
-  {
-    // 連線狀態不需登入：它回報系統是否活著，不含任何使用者資料，
-    // 且後端也把 /api/health 放在白名單內，前後端一致
-    path: '/health',
-    name: 'health',
-    component: HealthView,
   },
 ]
 
