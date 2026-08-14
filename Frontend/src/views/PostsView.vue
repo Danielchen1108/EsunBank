@@ -21,12 +21,13 @@ import { createComment, createPost, deletePost, listPosts, updatePost } from '..
  * 等於把本案唯一的 XSS 防線拆掉。此約束記於 F004-API.md 與 F005-API.md § 安全考量。
  * ──────────────────────────────────────────────────────────────
  *
- * 沒有排序：後端 sp_post_list 刻意不寫 ORDER BY（題目未定義排序規則），
- * 前端照回傳順序顯示，不自行排序，避免實作出題目未定義的行為。
+ * 排序一律由後端決定，前端照收不重排。發文由新到舊（sp_post_list），
+ * 單則發文內的留言由舊到新（sp_comment_list_visible）——方向相反是刻意的：
+ * 動態的通例是最新在最上面，但一段對話要從頭往下讀。
+ * 排序規則只寫在 SQL 一個地方，前端再排一次的話規則會散在兩種語言中。
  *
- * 留言列表：由 GET /api/posts 隨發文一併帶回（一次請求拿齊，避免每篇再打一次 API 的 N+1），
- * 後端已依時間由舊到新排序，前端不再排序。預設只顯示最後 3 則，其餘由「顯示全部」展開——
- * 留言是對話，順序本身就是資訊，這點與「發文列表不排序」的取捨不同。
+ * 留言列表：由 GET /api/posts 隨發文一併帶回（一次請求拿齊，避免每篇再打一次 API 的 N+1）。
+ * 預設只顯示最後 3 則，其餘由「顯示全部」展開。
  *
  * 留言的編輯與刪除仍不做：題目 §4 只寫「新增留言」（SCOPE-BOUNDARY.md R-3），
  * 後端也沒有對應端點。
@@ -126,15 +127,31 @@ async function loadPosts() {
   }
 }
 
+/**
+ * 相對時間的「現在」。
+ *
+ * 這是個會跳動的反應式來源：formatRelativeTime() 讀它，所以每次更新
+ * Vue 就會重繪畫面上所有的時間。少了它，剛發的文會一直停在「剛剛」，
+ * 直到使用者重新整理為止。
+ *
+ * 每分鐘更新一次即可——最小的顯示單位就是分鐘，再密只是白跑。
+ */
+const now = ref(Date.now())
+let clockTimer = null
+
 onMounted(() => {
   loadPosts()
   document.addEventListener('click', onDocumentClick)
   document.addEventListener('keydown', onKeydown)
+  clockTimer = setInterval(() => {
+    now.value = Date.now()
+  }, 60_000)
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', onDocumentClick)
   document.removeEventListener('keydown', onKeydown)
+  clearInterval(clockTimer)
 })
 
 async function onCreate() {
@@ -287,14 +304,52 @@ async function onComment(post) {
   }
 }
 
+const MINUTE = 60_000
+const HOUR = 60 * MINUTE
+const DAY = 24 * HOUR
+
 /**
- * 發佈時間顯示。
+ * 發佈時間顯示：近期用相對時間，久遠的用絕對日期。
  *
- * 後端回的是不含時區的本地時間字串（例：2026-08-13T20:05:19），
- * 只把 T 換成空白呈現，不交給 Date 解析——沒有時區資訊時，
- * 讓瀏覽器猜時區反而可能把時間位移。
+ *   < 1 分鐘   剛剛
+ *   < 1 小時   N 分鐘前
+ *   < 1 天     N 小時前
+ *   < 7 天     N 天前
+ *   >= 7 天    2026-08-05
+ *
+ * 超過 7 天就不再用相對時間：「93 天前」要心算才知道是什麼時候，
+ * 到那個距離絕對日期反而好判讀。這是現行社群平台的共同做法。
+ *
+ * 時區前提：後端回的是不含時區位移的本地時間字串（例：2026-08-13T20:05:19）。
+ * 要算相對時間就非得解析成 Date 不可，而 JS 規定「不帶位移的 date-time 字串」
+ * 按瀏覽器本地時區解讀。因此顯示正確的前提是
+ * 「MySQL 主機時鐘的時區 == 瀏覽器時區」——本專案前後端與 DB 都在同一台機器上
+ * （見 README 的啟動步驟），前提成立。跨時區部署時這裡會偏移，
+ * 屆時要改成由後端回帶位移的時間，而不是在前端補償。
+ *
+ * 絕對日期那一段刻意直接取字串前 10 碼，不走 toLocaleDateString()——
+ * 已經解析過一次的東西不需要再讓瀏覽器換算一次時區，徒增出錯的機會。
  */
-function formatTime(createdAt) {
+function formatRelativeTime(createdAt) {
+  if (typeof createdAt !== 'string') return ''
+
+  const timestamp = new Date(createdAt).getTime()
+  if (Number.isNaN(timestamp)) return ''
+
+  // 取 0 下限：DB 與瀏覽器的時鐘可能差幾秒，未來時間顯示為「剛剛」，
+  // 而不是「-1 分鐘前」。
+  const elapsed = Math.max(0, now.value - timestamp)
+
+  if (elapsed < MINUTE) return '剛剛'
+  if (elapsed < HOUR) return `${Math.floor(elapsed / MINUTE)} 分鐘前`
+  if (elapsed < DAY) return `${Math.floor(elapsed / HOUR)} 小時前`
+  if (elapsed < 7 * DAY) return `${Math.floor(elapsed / DAY)} 天前`
+
+  return createdAt.slice(0, 10)
+}
+
+/** 完整時間，放進 title 供滑鼠停留時查看；畫面上只顯示相對時間。 */
+function formatExactTime(createdAt) {
   return typeof createdAt === 'string' ? createdAt.replace('T', ' ') : ''
 }
 </script>
@@ -327,7 +382,7 @@ function formatTime(createdAt) {
     <p v-else-if="posts.length === 0" class="hint banner">目前沒有發文。</p>
 
     <!--
-      照後端回傳順序顯示，前端不排序（題目未定義排序規則）。
+      照後端回傳順序顯示（由新到舊），前端不重排。
       內容一律用 {{ }} 插值輸出，插值會跳脫 HTML——這是本案的 XSS 防線，不得改用 v-html。
     -->
     <!--
@@ -346,7 +401,11 @@ function formatTime(createdAt) {
       <header>
         <div class="meta">
           <span class="author">{{ post.userName }}</span>
-          <span class="time">{{ formatTime(post.createdAt) }}</span>
+          <time
+            class="time"
+            :datetime="post.createdAt"
+            :title="formatExactTime(post.createdAt)"
+          >{{ formatRelativeTime(post.createdAt) }}</time>
         </div>
 
         <!--
@@ -443,7 +502,11 @@ function formatTime(createdAt) {
           >
             <div class="comment-meta">
               <span class="comment-author">{{ comment.userName }}</span>
-              <span class="time">{{ formatTime(comment.createdAt) }}</span>
+              <time
+                class="time"
+                :datetime="comment.createdAt"
+                :title="formatExactTime(comment.createdAt)"
+              >{{ formatRelativeTime(comment.createdAt) }}</time>
             </div>
             <p class="comment-text">{{ comment.content }}</p>
           </li>

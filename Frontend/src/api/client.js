@@ -162,15 +162,15 @@ export async function login(payload) {
 /**
  * 列出所有發文（題目 §3）。
  *
- * 後端 sp_post_list 刻意沒有 ORDER BY——題目未定義排序規則
- * （SCOPE-BOUNDARY.md 列為 Out of Scope）。前端照回傳順序顯示，
- * 不自行排序，避免實作出題目未定義的行為。
+ * 排序由 sp_post_list 決定：由新到舊（created_at DESC，同秒時以 post_id DESC 決勝）。
+ * 前端照回傳順序顯示、不重排——排序規則只寫在 SQL 一個地方。
  *
  * 已軟刪除的發文不會出現（過濾條件在 Stored Procedure 內，ADR-004）。
  *
  * 每篇發文一併帶回自己的留言：留言的讀取沒有獨立端點，全部走這一支——
  * 若改成每篇再打一次 API，列表一展開就是 N+1 次請求。
- * comments 由後端依時間由舊到新排序，沒有留言時為空陣列，前端不再排序。
+ * comments 由後端依時間由舊到新排序（與發文相反，見 PostsView.vue 的說明），
+ * 沒有留言時為空陣列。
  *
  * @returns {Promise<Array<{postId: number, userId: number, userName: string,
  *   content: string, createdAt: string,

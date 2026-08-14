@@ -92,8 +92,18 @@ END$$
 -- 必帶 is_deleted = FALSE：軟刪除設計下遺漏此過濾，已刪除的發文會重新出現
 -- （F001 AC-18）。
 --
--- 未加 ORDER BY：題目未定義排序規則（NG-2 / F004 OQ-2），待 P03 API 規格決定後補上，
--- 屆時須一併評估是否為 post.created_at 建立索引。
+-- 排序由新到舊（owner 裁決 D-14）：
+--   題目未定義發文的排序規則（原 NG-2 / F004 OQ-2），由 owner 補為「最新在最上面」
+--   ——社群動態的通例。排序寫在這裡而不是前端：留言的排序已經在
+--   sp_comment_list_visible 裡，兩者若分屬不同層，規則就散在兩種語言中，遲早不同步。
+--
+-- 帶 post_id DESC 當決勝欄位：
+--   created_at 為 DATETIME（秒精度），同一秒內的多篇發文只靠時間排序順序不確定。
+--   post_id 是 AUTO_INCREMENT，與寫入順序一致，DESC 即「後寫入的在前」。
+--   （與 sp_comment_list_visible 用 comment_id 收尾是同一個理由。）
+--
+-- 索引：idx_post_deleted_created (is_deleted, created_at, post_id) 正是為這條查詢而建，
+--       排序直接由索引提供，不產生 filesort。欄位順序的推導見 01_DDL.sql。
 -- -----------------------------------------------------------------------------
 CREATE PROCEDURE sp_post_list()
 BEGIN
@@ -105,7 +115,8 @@ BEGIN
            p.created_at
       FROM `post` p
       JOIN `user` u ON u.user_id = p.user_id
-     WHERE p.is_deleted = FALSE;
+     WHERE p.is_deleted = FALSE
+     ORDER BY p.created_at DESC, p.post_id DESC;
 END$$
 
 

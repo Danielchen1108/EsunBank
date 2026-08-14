@@ -62,6 +62,20 @@ class PostRepositoryIntegrationTest {
         return postId;
     }
 
+    /**
+     * 以指定 created_at 寫入發文，僅供排序測試佈置。
+     *
+     * <p>刻意繞過 {@code sp_post_create}：該 SP 不開放指定時間，發佈時間一律由 DB 層產生
+     * （AC-14）。要驗證排序就必須造出可控的時間差，這是唯一的辦法。
+     */
+    private Long insertPostAt(String content, String createdAt) {
+        jdbcTemplate.update(
+                "INSERT INTO `post` (user_id, content, created_at) VALUES (?, ?, ?)",
+                SEED_USER_ID, content, createdAt);
+
+        return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
+    }
+
     private int postDeletedFlag(Long postId) {
         return jdbcTemplate.queryForObject(
                 "SELECT is_deleted FROM `post` WHERE post_id = ?", Integer.class, postId);
@@ -98,6 +112,35 @@ class PostRepositoryIntegrationTest {
 
         assertThat(posts).extracting(PostRow::postId).contains(visibleId);
         assertThat(posts).extracting(PostRow::postId).doesNotContain(deletedId);
+    }
+
+    @Test
+    @DisplayName("列出所有發文：由新到舊排序（D-14）——排序寫在 sp_post_list，不在應用層")
+    void listOrdersPostsNewestFirst() {
+        // 刻意讓插入順序與時間順序相反：SP 若漏了 ORDER BY，
+        // 回傳會是插入順序，斷言就會失敗。
+        Long oldest = insertPostAt("最舊", "2020-01-01 00:00:00");
+        Long newest = insertPostAt("最新", "2030-01-01 00:00:00");
+        Long middle = insertPostAt("中間", "2025-01-01 00:00:00");
+
+        List<Long> ids = postRepository.findAll().stream().map(PostRow::postId).toList();
+
+        // 只比較這三筆的相對順序，不假設種子資料的內容
+        assertThat(ids).containsSubsequence(newest, middle, oldest);
+    }
+
+    @Test
+    @DisplayName("列出所有發文：created_at 同秒時以 post_id DESC 決勝——DATETIME 只有秒精度")
+    void listBreaksTiesByPostIdDescending() {
+        String sameSecond = "2029-06-15 12:00:00";
+        Long first = insertPostAt("同秒 A", sameSecond);
+        Long second = insertPostAt("同秒 B", sameSecond);
+
+        List<Long> ids = postRepository.findAll().stream().map(PostRow::postId).toList();
+
+        // 後寫入的 post_id 較大，DESC 下應排在前面
+        assertThat(second).isGreaterThan(first);
+        assertThat(ids).containsSubsequence(second, first);
     }
 
     @Test

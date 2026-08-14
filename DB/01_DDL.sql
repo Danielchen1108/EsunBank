@@ -58,8 +58,22 @@ CREATE TABLE `post` (
 
     PRIMARY KEY (post_id),
 
-    -- 「列出所有發文」必帶 is_deleted = FALSE 過濾，為最高頻查詢（AC-15）
-    KEY idx_post_deleted (is_deleted, post_id),
+    -- 「列出所有發文」是最高頻查詢（AC-15），必帶 is_deleted = FALSE 過濾。
+    -- sp_post_list 的完整形狀：
+    --
+    --     WHERE p.is_deleted = FALSE
+    --     ORDER BY p.created_at DESC, p.post_id DESC
+    --
+    -- 欄位順序的理由與 comment 表相同：is_deleted 是唯一的等值條件，必須放前導；
+    -- 其後的 created_at、post_id 天然就是排序順序，MySQL 8 反向掃描索引即可取得結果，
+    -- 不需要額外的 filesort。
+    --
+    -- post_id 放在最後不是為了過濾，是排序的決勝欄位——created_at 為 DATETIME（秒精度），
+    -- 同一秒內的多篇發文只靠時間排序順序不確定（種子資料就是同秒寫入的實例）。
+    --
+    -- 本索引目前唯一的使用者就是 sp_post_list；sp_post_find_by_id / sp_post_update /
+    -- sp_post_delete 都以 post_id 等值查詢，走 PRIMARY，不受此處欄位順序影響。
+    KEY idx_post_deleted_created (is_deleted, created_at, post_id),
 
     CONSTRAINT fk_post_user
         FOREIGN KEY (user_id) REFERENCES `user` (user_id)
